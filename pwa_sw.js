@@ -1,4 +1,4 @@
-const cacheName = "ChercheLeTrou-20220323_2222";
+const cacheName = "ChercheLeTrou-20251223_2305";
 const contentToCache = [
     "libs.js",
     "trouve.js",
@@ -15,6 +15,10 @@ const contentToCache = [
 
 self.addEventListener('install', (e) => {
     console.log(`[Service Worker ${cacheName}] Install`);
+
+    // Force immediate activation of new service worker
+    self.skipWaiting();
+
     e.waitUntil(
         caches.open(cacheName).then((cache) => {
             console.log('[Service Worker] Mise en cache globale: app shell et contenu');
@@ -64,17 +68,21 @@ const expectedCaches = [cacheName];
 
 
 self.addEventListener('activate', event => {
+  // Take immediate control of all clients
+  self.clients.claim();
+
   // delete any caches that aren't in expectedCaches
   // which will get rid of static-v1
   event.waitUntil(
     caches.keys().then(keys => Promise.all(
       keys.map(key => {
         if (!expectedCaches.includes(key)) {
+          console.log(`[Service Worker] Deleting old cache: ${key}`);
           return caches.delete(key);
         }
       })
     )).then(() => {
-      console.log('[Service Worker] now ready to handle fetches!');
+      console.log(`[Service Worker ${cacheName}] now ready to handle fetches!`);
     })
   );
 });

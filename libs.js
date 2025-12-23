@@ -81,12 +81,22 @@ function distWithUnit(dist) {
 function setLinks(name, longitude, latitude) {
     const osm = document.querySelector('#osm-'+name);
     const geo = document.querySelector('#geo-'+name);
+    const google = document.querySelector('#google-'+name);
 
-    geo.href = `https://www.geoportail.gouv.fr/carte?c=${longitude},${latitude}&z=30&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes`;
-    geo.textContent = `Geoportail`;
+    if (geo) {
+        geo.href = `https://www.geoportail.gouv.fr/carte?c=${longitude},${latitude}&z=30&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes`;
+        geo.textContent = `Geoportail`;
+    }
 
-    osm.href = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}`;
-    osm.textContent = `OpenStreetMap`;
+    if (osm) {
+        osm.href = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}`;
+        osm.textContent = `OpenStreetMap`;
+    }
+
+    if (google) {
+        google.href = `https://www.google.com/maps?q=${latitude},${longitude}&z=15`;
+        google.textContent = `Google Maps`;
+    }
 }
 
 function erreurPosition(error) {

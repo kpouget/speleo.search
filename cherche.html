@@ -18,55 +18,468 @@
     <script type="text/javascript" src="pwa.js"></script>
 
     <style>
-      #targetName {
-          font-weight: bold;
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        line-height: 1.5;
+        background: #f5f5f5;
+        color: #333;
+        padding: 10px;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+
+      .header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+
+      .target-info {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 10px;
+      }
+
+      .nav-link {
+        display: inline-block;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        transition: background 0.3s;
+      }
+
+      .nav-link:hover {
+        background: rgba(255,255,255,0.3);
+      }
+
+      /* Control Panel */
+      .control-panel {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .control-panel h2 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .btn {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        min-width: 120px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn.btn-success {
+        background: linear-gradient(135deg, #27ae60, #229954);
+      }
+
+      .btn.btn-danger {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+      }
+
+      /* Status Panel */
+      .status-panel {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .status-panel h2 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+      }
+
+      .status-item {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        border-left: 4px solid #3498db;
+      }
+
+      .status-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .status-item .label {
+        font-weight: 600;
+        color: #2c3e50;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+      }
+
+      .status-item .value {
+        color: #555;
+        font-family: monospace;
+        font-size: 0.95rem;
+      }
+
+      /* Map Section */
+      .map-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+      }
+
+      .map-section h2 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+      }
+
+      #simple_map {
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        background: #f8f9fa;
+        max-width: 100%;
+        height: auto;
+      }
+
+      /* Direction Panel */
+      .direction-panel {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .direction-panel h2 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+      }
+
+      .direction-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-left: 4px solid #e74c3c;
+        text-align: center;
+      }
+
+      .direction-item .big-text {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+      }
+
+      .direction-item .small-text {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+      }
+
+      /* Visual Compass */
+      .compass-container {
+        display: flex;
+        justify-content: center;
+        margin: 20px 0;
+      }
+
+      #visual_compass {
+        border: 2px solid #34495e;
+        border-radius: 50%;
+        background: radial-gradient(circle, #ffffff 30%, #f8f9fa 70%, #e9ecef 100%);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2), inset 0 2px 5px rgba(0,0,0,0.1);
+        max-width: 200px;
+        max-height: 200px;
+        width: 100%;
+        height: auto;
+      }
+
+      /* External Links Panel */
+      .links-panel {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      .links-panel h2 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+      }
+
+      .link-group {
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .link-group h3 {
+        color: #34495e;
+        font-size: 1rem;
+        margin-bottom: 10px;
+      }
+
+      .link-group .coordinates {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        margin-bottom: 10px;
+      }
+
+      .map-links {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .map-link {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #3498db;
+        color: white;
+        text-decoration: none;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        transition: background 0.3s;
+      }
+
+      .map-link:hover {
+        background: #2980b9;
+      }
+
+      .map-link.geo { background: #27ae60; }
+      .map-link.geo:hover { background: #229954; }
+      .map-link.google { background: #e74c3c; }
+      .map-link.google:hover { background: #c0392b; }
+
+      /* Version info */
+      .version {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #7f8c8d;
+        margin-top: 10px;
+      }
+
+      /* Responsive Design */
+      @media (min-width: 768px) {
+        .container {
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .header {
+          grid-column: 1 / -1;
+        }
+
+        .map-section {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .container {
+          grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .header {
+          grid-column: 1 / -1;
+        }
+
+        .map-section {
+          grid-column: 1 / -1;
+        }
+
+        .direction-panel {
+          grid-column: 1 / -1;
+        }
+      }
+
+      /* Accessibility */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
       }
     </style>
   </head>
   <body>
-    <ul>
-      <li><a href="/">Retour à l'Index</a></li>
-    </ul>
+    <div class="container">
+      <!-- Header Section -->
+      <header class="header">
+        <h1 id="targetName">🕳️ Cherche le trou</h1>
+        <div class="target-info">
+          <div id="targetLoc">Chargement des coordonnées...</div>
+        </div>
+        <a href="/" class="nav-link">← Retour à l'Index</a>
+      </header>
 
-    <button id="find-me">Localiser</button>
-    <button id="follow-me">Suivre</button>
-    <button id="forget-me">Stopper</button>
+      <!-- Control Panel -->
+      <section class="control-panel">
+        <h2>🎯 Contrôles GPS</h2>
+        <div class="button-group">
+          <button id="find-me" class="btn">📍 Localiser</button>
+          <button id="follow-me" class="btn btn-success">🔄 Suivre</button>
+          <button id="forget-me" class="btn btn-danger">⏹️ Stopper</button>
+        </div>
+      </section>
 
-    <p id="status"></p>
-    <p id="tracking">.</p>
-    <p id="loc_age" data-start_ts="0">.</p>
-    <p id="gps_accuracy">.</p>
-    <hr/><hr/>
-    <p id="targetName"></p>
-    <hr/>
-    <p>
-      <span id="targetLoc"></span>
-      (Cible)
-    </p>
-    <p>
-      <span id="lonlat">(non calculée)</span>
-      (Position actuelle)
-    </p>
-    <hr/><hr/>
-    <ul>
-      <li>Cible <a id="geo-target" target="_blank"></a>, <a id="osm-target" target="_blank"></a>
-      </li>
-      <li>Position actuelle <a id="geo-current" target="_blank"></a>, <a id="osm-current" target="_blank"></a>
-      </li>
-    </ul>
-    <hr/><hr/>
-    <p id="bearing"></p>
-    <p id="heading"></p>
-    <hr/>
-    <p><span id="distance"></span>, <span id="north"></span>, <span id="east"></span></p>
-    <hr/><hr/>
+      <!-- Status Panel -->
+      <section class="status-panel">
+        <h2>📡 État GPS</h2>
+        <div class="status-item">
+          <span class="label">État:</span>
+          <span class="value" id="status">En attente...</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Suivi:</span>
+          <span class="value" id="tracking">.</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Age du point GPS:</span>
+          <span class="value" id="loc_age" data-start_ts="0">.</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Précision:</span>
+          <span class="value" id="gps_accuracy">.</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Position actuelle:</span>
+          <span class="value" id="lonlat">(non calculée)</span>
+        </div>
+      </section>
 
-    <p>
-      <canvas id="simple_map" width="1" height="1" style="border:0px solid #d3d3d3;">
-        Your browser does not support the HTML5 canvas tag.
-      </canvas>
-    </p>
-    <p id="version"></p>
+      <!-- External Links Panel -->
+      <section class="links-panel">
+        <h2>🌐 Cartes Externes</h2>
+
+        <div class="link-group">
+          <h3>🎯 Cible</h3>
+          <div class="coordinates" id="targetLoc-copy">Coordonnées de la cible</div>
+          <div class="map-links">
+            <a id="geo-target" target="_blank" class="map-link geo">Geoportail</a>
+            <a id="osm-target" target="_blank" class="map-link">OpenStreetMap</a>
+            <a id="google-target" target="_blank" class="map-link google">Google Maps</a>
+          </div>
+        </div>
+
+        <div class="link-group">
+          <h3>📍 Position actuelle</h3>
+          <div class="coordinates" id="lonlat-copy">Position en attente GPS...</div>
+          <div class="map-links">
+            <a id="geo-current" target="_blank" class="map-link geo">Geoportail</a>
+            <a id="osm-current" target="_blank" class="map-link">OpenStreetMap</a>
+            <a id="google-current" target="_blank" class="map-link google">Google Maps</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Map Section -->
+      <section class="map-section">
+        <h2>🗺️ Carte Offline</h2>
+        <canvas id="simple_map" width="1" height="1">
+          Votre navigateur ne supporte pas le canvas HTML5.
+        </canvas>
+      </section>
+
+      <!-- Direction Panel -->
+      <section class="direction-panel">
+        <h2>🧭 Direction & Distance</h2>
+
+        <!-- Visual Compass -->
+        <div class="compass-container">
+          <canvas id="visual_compass" width="200" height="200">
+            Votre navigateur ne supporte pas le canvas HTML5.
+          </canvas>
+          <div class="compass-legend">
+            <div style="display: flex; justify-content: center; gap: 20px; font-size: 0.8rem; margin-top: 10px;">
+              <div style="color: #3498db;">🔹 Cap actuel</div>
+              <div style="color: #e74c3c;">🔹 Direction cible</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="direction-item">
+          <div class="big-text" id="distance">Calcul en cours...</div>
+          <div class="small-text">Distance à vol d'oiseau</div>
+        </div>
+        <div class="direction-item">
+          <div class="big-text" id="bearing">-</div>
+          <div class="small-text">Direction vers la cible</div>
+        </div>
+        <div class="direction-item">
+          <div class="big-text" id="heading">-</div>
+          <div class="small-text">Direction actuelle</div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <div style="flex: 1; text-align: center; background: #e8f4f8; padding: 10px; border-radius: 6px;">
+            <div style="font-weight: 600; color: #2c3e50;" id="north">-</div>
+            <div style="font-size: 0.8rem; color: #7f8c8d;">Nord/Sud</div>
+          </div>
+          <div style="flex: 1; text-align: center; background: #fef9e7; padding: 10px; border-radius: 6px;">
+            <div style="font-weight: 600; color: #2c3e50;" id="east">-</div>
+            <div style="font-size: 0.8rem; color: #7f8c8d;">Est/Ouest</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="version" id="version"></div>
+    </div>
     <script type="text/javascript">
        (function() {
            init_cherche()

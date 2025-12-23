@@ -20,8 +20,14 @@ function setTarget() {
     }
     const targetName = document.querySelector('#targetName');
     const targetLoc = document.querySelector('#targetLoc');
-    targetName.textContent = `cible: ${name}`;
-    targetLoc.textContent = `lat=${target_lat.toFixed(4)}° lon=${target_lon.toFixed(4)}°`;
+    const targetLocCopy = document.querySelector('#targetLoc-copy');
+
+    targetName.textContent = `🕳️ ${name}`;
+    const coordText = `lat=${target_lat.toFixed(4)}° lon=${target_lon.toFixed(4)}°`;
+    targetLoc.textContent = coordText;
+    if (targetLocCopy) {
+        targetLocCopy.textContent = coordText;
+    }
 
     setLinks("target", target_lon, target_lat)
 
@@ -55,10 +61,10 @@ function init() {
 function refreshGPSAge() {
     var start_ts = parseInt(loc_age.dataset.start_ts)
     if (start_ts == 0) {
-        loc_age.textContent = `Age du point GPS: <pas encore trouvé>`
+        loc_age.textContent = `<pas encore trouvé>`
         return
     }
-    loc_age.textContent = `Age du point GPS:: ${ts_to_hms_dist(start_ts)} `
+    loc_age.textContent = `${ts_to_hms_dist(start_ts)}`
 }
 
 function update_position(position) {
@@ -71,18 +77,30 @@ function update_position(position) {
     refreshGPSAge()
 
     try {
-        gps_accuracy.textContent = `Précision du point GPS: +/- ${distWithUnit(Math.trunc(position.coords.accuracy))}`
+        gps_accuracy.textContent = `+/- ${distWithUnit(Math.trunc(position.coords.accuracy))}`
     } catch (error) {
-        gps_accuracy.textContent = `Précision du point GPS: error ${error}`
+        gps_accuracy.textContent = `erreur: ${error}`
     }
 
     if (position.coords.heading != null) {
         heading.textContent = `Direction actuelle: ${bearing_to_cardinal(position.coords.heading)} (${position.coords.heading.toFixed(0)}°)`;
+
+        // Update compass with current heading
+        if (typeof update_compass_heading !== 'undefined') {
+            update_compass_heading(position.coords.heading);
+        }
     } else {
         heading.textContent = `Direction actuelle: inconnue`;
     }
 
-    lonlat.textContent = `lat=${latitude.toFixed(4)}° lon=${longitude.toFixed(4)}°`
+    const currentCoordText = `lat=${latitude.toFixed(4)}° lon=${longitude.toFixed(4)}°`;
+    lonlat.textContent = currentCoordText;
+
+    // Also update the copy in the links section
+    const lonlatCopy = document.querySelector('#lonlat-copy');
+    if (lonlatCopy) {
+        lonlatCopy.textContent = currentCoordText;
+    }
 
     if (typeof simple_map_add_to_path !== 'undefined') {
         simple_map_add_to_path({lng: longitude, lat: latitude}, position.coords.heading)
@@ -130,6 +148,11 @@ function update_target(position) {
 
     var bear = calcBearing(latitude, longitude, target_lat, target_lon)
     bearing.textContent = `Direction de la cible: ${bearing_to_cardinal(bear)} (${bear.toFixed(0)}°)`;
+
+    // Update compass with target bearing
+    if (typeof update_compass_target_bearing !== 'undefined') {
+        update_compass_target_bearing(bear);
+    }
 
     setLinks("current", longitude, latitude)
 }

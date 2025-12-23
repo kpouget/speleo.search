@@ -153,7 +153,7 @@ function drawLineToCurrent() {
     ctx.closePath();
 }
 
-function plot_bearing(brng, color) {
+function plot_bearing(brng, color, lineStyle) {
     let loc = get_point_at_bearing(brng, BEARING_DIST);
     let pt = latlngToScreenXY(loc)
 
@@ -161,10 +161,55 @@ function plot_bearing(brng, color) {
     gotoCurrent();
 
     ctx.strokeStyle = color ? color : 'green';
+    ctx.lineWidth = 2;
+
+    // Set line style (solid or dashed)
+    if (lineStyle === 'dashed') {
+        ctx.setLineDash([10, 5]);
+    } else {
+        ctx.setLineDash([]);
+    }
+
     ctx.lineTo(pt.x, pt.y);
 
     ctx.stroke();
 
+    ctx.closePath();
+}
+
+function plot_target_bearing() {
+    let current = get_current_position();
+    if (current == null || simple_map_dest_loc.lat == null) {
+        return;
+    }
+
+    let target_bearing = calcBearing(current.lat, current.lng, simple_map_dest_loc.lat, simple_map_dest_loc.lng);
+
+    ctx.beginPath();
+    gotoCurrent();
+
+    // Draw a prominent red dashed line pointing to target
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([15, 5]);
+
+    let loc = get_point_at_bearing(target_bearing, BEARING_DIST);
+    let pt = latlngToScreenXY(loc);
+    ctx.lineTo(pt.x, pt.y);
+
+    // Add an arrow head
+    let angle = target_bearing * Math.PI / 180;
+    let arrowLength = 15;
+    let arrowAngle = Math.PI / 6; // 30 degrees
+
+    ctx.lineTo(pt.x - arrowLength * Math.cos(angle - arrowAngle),
+               pt.y - arrowLength * Math.sin(angle - arrowAngle));
+    ctx.moveTo(pt.x, pt.y);
+    ctx.lineTo(pt.x - arrowLength * Math.cos(angle + arrowAngle),
+               pt.y - arrowLength * Math.sin(angle + arrowAngle));
+
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
     ctx.closePath();
 }
 
@@ -196,6 +241,163 @@ function get_path_bearing() {
 
 function mark_current_position() {
     plotCircle(get_current_position(), "green");
+}
+
+function draw_scale_bar() {
+    if (path.length == 0) return;
+
+    // Calculate the distance represented by 100 pixels
+    let current = get_current_position();
+    let scale_distance_m = 100; // Start with 100m
+    let scale_point = get_point_at_bearing(90, scale_distance_m); // Point 100m east
+
+    let current_screen = latlngToScreenXY(current);
+    let scale_screen = latlngToScreenXY(scale_point);
+    let pixels_per_100m = Math.abs(scale_screen.x - current_screen.x);
+
+    // Adjust scale to reasonable values
+    let scale_values = [10, 25, 50, 100, 250, 500, 1000, 2000, 5000];
+    let target_pixels = 80; // Target scale bar length in pixels
+
+    let best_scale = 100;
+    let best_pixels = pixels_per_100m;
+
+    for (let scale of scale_values) {
+        let projected_pixels = (scale / 100) * pixels_per_100m;
+        if (projected_pixels >= 40 && projected_pixels <= 120) {
+            best_scale = scale;
+            best_pixels = projected_pixels;
+            break;
+        }
+    }
+
+    // Draw scale bar in bottom-left corner - mobile adaptive
+    let bar_x = Math.min(30, c.width * 0.05);
+    let bar_y = c.height - Math.min(40, c.height * 0.1);
+    let bar_width = best_pixels;
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'white';
+
+    // Background rectangle
+    ctx.fillRect(bar_x - 5, bar_y - 20, bar_width + 30, 30);
+    ctx.strokeRect(bar_x - 5, bar_y - 20, bar_width + 30, 30);
+
+    // Scale bar
+    ctx.beginPath();
+    ctx.moveTo(bar_x, bar_y);
+    ctx.lineTo(bar_x + bar_width, bar_y);
+
+    // End markers
+    ctx.moveTo(bar_x, bar_y - 5);
+    ctx.lineTo(bar_x, bar_y + 5);
+    ctx.moveTo(bar_x + bar_width, bar_y - 5);
+    ctx.lineTo(bar_x + bar_width, bar_y + 5);
+
+    ctx.stroke();
+
+    // Scale text
+    ctx.fillStyle = 'black';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+
+    let scale_text = best_scale >= 1000 ? `${best_scale/1000}km` : `${best_scale}m`;
+    ctx.fillText(scale_text, bar_x + bar_width/2, bar_y - 8);
+}
+
+function draw_legend() {
+    // Skip legend on very small screens (less than 300px wide)
+    if (c.width < 300) {
+        return;
+    }
+
+    // Legend positioning - adaptive for mobile
+    let legend_width = Math.min(150, c.width * 0.4);
+    let legend_height = 140;
+    let legend_x = c.width - legend_width - 10; // 10px margin from right
+    let legend_y = 20;
+
+    // Background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(legend_x, legend_y, legend_width, legend_height);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(legend_x, legend_y, legend_width, legend_height);
+
+    // Title
+    ctx.fillStyle = 'black';
+    let title_font_size = Math.max(10, Math.min(12, legend_width / 12));
+    ctx.font = `bold ${title_font_size}px Arial`;
+    ctx.textAlign = 'left';
+    ctx.fillText('Légende', legend_x + 5, legend_y + 15);
+
+    // Legend items - adjust font size for mobile
+    let item_font_size = Math.max(8, Math.min(10, legend_width / 15));
+    ctx.font = `${item_font_size}px Arial`;
+    let item_y = legend_y + 30;
+    let item_spacing = Math.max(14, Math.min(18, legend_width / 8));
+
+    // Target (red circle)
+    ctx.beginPath();
+    ctx.arc(legend_x + 10, item_y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+    ctx.fillStyle = 'black';
+    ctx.fillText('Cible', legend_x + 20, item_y + 3);
+
+    // Current position (green circle)
+    item_y += item_spacing;
+    ctx.beginPath();
+    ctx.arc(legend_x + 10, item_y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'green';
+    ctx.fill();
+    ctx.fillStyle = 'black';
+    ctx.fillText('Position actuelle', legend_x + 20, item_y + 3);
+
+    // Start position (blue circle)
+    item_y += item_spacing;
+    ctx.beginPath();
+    ctx.arc(legend_x + 10, item_y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'blue';
+    ctx.fill();
+    ctx.fillStyle = 'black';
+    ctx.fillText('Départ', legend_x + 20, item_y + 3);
+
+    // Direction to target (red dashed line)
+    item_y += item_spacing;
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    ctx.moveTo(legend_x + 5, item_y);
+    ctx.lineTo(legend_x + 15, item_y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'black';
+    ctx.fillText('Direction cible', legend_x + 20, item_y + 3);
+
+    // Movement direction (green line)
+    item_y += item_spacing;
+    ctx.strokeStyle = 'green';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(legend_x + 5, item_y);
+    ctx.lineTo(legend_x + 15, item_y);
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('Direction mouvement', legend_x + 20, item_y + 3);
+
+    // Compass direction (orange line)
+    item_y += item_spacing;
+    ctx.strokeStyle = 'orange';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(legend_x + 5, item_y);
+    ctx.lineTo(legend_x + 15, item_y);
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('Boussole', legend_x + 20, item_y + 3);
 }
 
 
@@ -329,6 +531,12 @@ function do_simulate_move() {
 var c = null;
 var ctx = null;
 
+// Compass variables
+var compass_canvas = null;
+var compass_ctx = null;
+var current_heading = null;
+var target_bearing = null;
+
 let simple_map_dest_loc = {lat: null, lng: null};
 
 function redraw() {
@@ -345,22 +553,170 @@ function redraw() {
 
     plot_path();
 
-    plot_bearing(get_path_bearing(), "green");
+    // Show direction indicators
+    plot_bearing(get_path_bearing(), "green");           // Movement direction
     if (compass_bearing != null) {
-        plot_bearing(compass_bearing, "orange");
+        plot_bearing(compass_bearing, "orange");         // Device compass
     }
+    plot_target_bearing();                               // Direction to target (red arrow)
+
     mark_current_position();
+
+    // Add scale bar and legend
+    draw_scale_bar();
+    draw_legend();
+}
+
+// ----------------------------------------------------- //
+//                 Compass functions
+// ----------------------------------------------------- //
+
+function draw_compass() {
+    if (!compass_ctx) return;
+
+    const centerX = compass_canvas.width / 2;
+    const centerY = compass_canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 10;
+
+    // Clear canvas
+    compass_ctx.clearRect(0, 0, compass_canvas.width, compass_canvas.height);
+
+    // Draw compass face background
+    compass_ctx.beginPath();
+    compass_ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    compass_ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    compass_ctx.fill();
+    compass_ctx.strokeStyle = '#34495e';
+    compass_ctx.lineWidth = 2;
+    compass_ctx.stroke();
+
+    // Draw degree marks
+    compass_ctx.strokeStyle = '#7f8c8d';
+    compass_ctx.lineWidth = 1;
+    for (let angle = 0; angle < 360; angle += 15) {
+        const radian = (angle - 90) * Math.PI / 180;
+        const isMainDirection = angle % 90 === 0;
+        const markLength = isMainDirection ? 15 : 8;
+
+        const x1 = centerX + (radius - markLength) * Math.cos(radian);
+        const y1 = centerY + (radius - markLength) * Math.sin(radian);
+        const x2 = centerX + radius * Math.cos(radian);
+        const y2 = centerY + radius * Math.sin(radian);
+
+        compass_ctx.beginPath();
+        compass_ctx.moveTo(x1, y1);
+        compass_ctx.lineTo(x2, y2);
+        compass_ctx.stroke();
+    }
+
+    // Draw N/S/E/W labels
+    compass_ctx.fillStyle = '#2c3e50';
+    compass_ctx.font = 'bold 16px Arial';
+    compass_ctx.textAlign = 'center';
+    compass_ctx.textBaseline = 'middle';
+
+    const labelRadius = radius - 25;
+    compass_ctx.fillText('N', centerX, centerY - labelRadius);
+    compass_ctx.fillText('S', centerX, centerY + labelRadius);
+    compass_ctx.fillText('E', centerX + labelRadius, centerY);
+    compass_ctx.fillText('O', centerX - labelRadius, centerY);
+
+    // Draw target bearing needle (red)
+    if (target_bearing !== null) {
+        draw_compass_needle(centerX, centerY, radius - 30, target_bearing, '#e74c3c', 4, 'Cible');
+    }
+
+    // Draw current heading needle (blue) - on top
+    if (current_heading !== null) {
+        draw_compass_needle(centerX, centerY, radius - 40, current_heading, '#3498db', 3, 'Cap');
+    }
+
+    // Draw center dot
+    compass_ctx.beginPath();
+    compass_ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
+    compass_ctx.fillStyle = '#34495e';
+    compass_ctx.fill();
+}
+
+function draw_compass_needle(centerX, centerY, length, angle, color, lineWidth, label) {
+    const radian = (angle - 90) * Math.PI / 180; // -90 to make 0° point north
+
+    // Needle line
+    compass_ctx.strokeStyle = color;
+    compass_ctx.lineWidth = lineWidth;
+    compass_ctx.beginPath();
+    compass_ctx.moveTo(centerX, centerY);
+    compass_ctx.lineTo(
+        centerX + length * Math.cos(radian),
+        centerY + length * Math.sin(radian)
+    );
+    compass_ctx.stroke();
+
+    // Needle tip (triangle)
+    const tipX = centerX + length * Math.cos(radian);
+    const tipY = centerY + length * Math.sin(radian);
+
+    compass_ctx.fillStyle = color;
+    compass_ctx.beginPath();
+    compass_ctx.moveTo(tipX, tipY);
+    compass_ctx.lineTo(
+        tipX - 8 * Math.cos(radian - Math.PI/6),
+        tipY - 8 * Math.sin(radian - Math.PI/6)
+    );
+    compass_ctx.lineTo(
+        tipX - 8 * Math.cos(radian + Math.PI/6),
+        tipY - 8 * Math.sin(radian + Math.PI/6)
+    );
+    compass_ctx.closePath();
+    compass_ctx.fill();
+}
+
+function update_compass_heading(heading) {
+    current_heading = heading;
+    draw_compass();
+}
+
+function update_compass_target_bearing(bearing) {
+    target_bearing = bearing;
+    draw_compass();
+}
+
+function init_compass() {
+    compass_canvas = document.getElementById("visual_compass");
+    if (compass_canvas) {
+        compass_ctx = compass_canvas.getContext("2d");
+
+        // Make canvas responsive
+        const container = compass_canvas.parentElement;
+        const size = Math.min(200, container.clientWidth - 40);
+        compass_canvas.width = size;
+        compass_canvas.height = size;
+
+        draw_compass();
+    }
 }
 
 function init_simple_map() {
     c = document.getElementById("simple_map");
     ctx = c.getContext("2d");
 
+    // Initialize compass
+    init_compass();
+
     //document.querySelector('#move').addEventListener('click', do_simulate_move);
 
     window.addEventListener('resize', () => {
         onResize();
         redraw();
+
+        // Also resize compass
+        if (compass_canvas) {
+            const container = compass_canvas.parentElement;
+            const size = Math.min(200, container.clientWidth - 40);
+            compass_canvas.width = size;
+            compass_canvas.height = size;
+            draw_compass();
+        }
     })
 
     onResize();
