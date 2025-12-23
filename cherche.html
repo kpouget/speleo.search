@@ -11,9 +11,11 @@
     <link rel="apple-touch-icon" href="/speleo.png">
     <link rel="shortcut icon" href="favicon.png" type="image/png"/>
 
-    <script type="text/javascript" src="/libs.js"></script>
-    <script type="text/javascript" src="/trouve.js"></script>
-    <script type="text/javascript" src="/pwa.js"></script>
+    <script type="text/javascript" src="libs.js"></script>
+    <script type="text/javascript" src="trouve.js"></script>
+    <script type="text/javascript" src="simple_map.js"></script>
+
+    <script type="text/javascript" src="pwa.js"></script>
 
     <style>
       #targetName {
@@ -36,50 +38,38 @@
     <p id="gps_accuracy">.</p>
     <hr/><hr/>
     <p id="targetName"></p>
-
     <hr/>
+    <p>
+      <span id="targetLoc"></span>
+      (Cible)
+    </p>
+    <p>
+      <span id="lonlat">(non calculée)</span>
+      (Position actuelle)
+    </p>
+    <hr/><hr/>
+    <ul>
+      <li>Cible <a id="geo-target" target="_blank"></a>, <a id="osm-target" target="_blank"></a>
+      </li>
+      <li>Position actuelle <a id="geo-current" target="_blank"></a>, <a id="osm-current" target="_blank"></a>
+      </li>
+    </ul>
+    <hr/><hr/>
     <p id="bearing"></p>
     <p id="heading"></p>
     <hr/>
-    <p id="distance"></p>
-    <p id="north"></p>
-    <p id="east"></p>
+    <p><span id="distance"></span>, <span id="north"></span>, <span id="east"></span></p>
     <hr/><hr/>
-    <p id="targetLoc"></p>
-    <p>Position actuelle:</p>
-    <p id="lonlat">(non calculée)</p>
-    <hr/><hr/>
-    <ul>
-      <li>Cible
-        <ul>
-          <li><a id="geo-target" target="_blank"></a></li>
-          <li><a id="osm-target" target="_blank"></a></li>
-        </ul>
-      </li>
-      <li>Position actuelle
-        <ul>
-          <li><a id="geo-current" target="_blank"></a></li>
-          <li><a id="osm-current" target="_blank"></a></li>
-        </ul>
-      </li>
-    </ul>
-    <hr/><hr/>
-    <ul>
-      <li><a href="/">Retour à l'Index</a></li>
-    </ul>
 
+    <p>
+      <canvas id="simple_map" width="1" height="1" style="border:0px solid #d3d3d3;">
+        Your browser does not support the HTML5 canvas tag.
+      </canvas>
+    </p>
+    <p id="version"></p>
     <script type="text/javascript">
        (function() {
-           init()
-           initPWA()
-
-           setTarget()
-           document.querySelector('#find-me').addEventListener('click', findMeOnce);
-           document.querySelector('#follow-me').addEventListener('click', followMe);
-           document.querySelector('#forget-me').addEventListener('click', forgetMe);
-
-           status.textContent = "find me once";
-           findMeOnce()
+           init_cherche()
       })();
     </script>
   </body>

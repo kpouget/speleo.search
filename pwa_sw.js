@@ -1,8 +1,9 @@
-const cacheName = "ChercheLeTrou-20210327_2030";
+const cacheName = "ChercheLeTrou-20220323_2222";
 const contentToCache = [
     "libs.js",
     "trouve.js",
     "pwa.js",
+    "simple_map.js",
 
     "index.html",
     "cherche.html",
@@ -13,7 +14,7 @@ const contentToCache = [
 ];
 
 self.addEventListener('install', (e) => {
-    console.log('[Service Worker] Install');
+    console.log(`[Service Worker ${cacheName}] Install`);
     e.waitUntil(
         caches.open(cacheName).then((cache) => {
             console.log('[Service Worker] Mise en cache globale: app shell et contenu');
@@ -26,7 +27,7 @@ function removeQuery(request) {
 var url = new URL(request.url);
     url.search = '';
     url.fragment = '';
-    
+
     return new Request(url, {
         method: request.method,
         headers: request.headers,
@@ -42,7 +43,7 @@ var url = new URL(request.url);
 self.addEventListener('fetch', (e) => {
     var cleanRq = removeQuery(e.request);
 
-    console.log('[Service Worker] Fetching resource', cleanRq);
+    console.log(`[Service Worker ${cacheName}] Fetching resource`, cleanRq);
 
     e.respondWith((async () => {
         const r = await caches.match(cleanRq);
@@ -59,6 +60,9 @@ self.addEventListener('fetch', (e) => {
     })());
 });
 
+const expectedCaches = [cacheName];
+
+
 self.addEventListener('activate', event => {
   // delete any caches that aren't in expectedCaches
   // which will get rid of static-v1
@@ -74,4 +78,3 @@ self.addEventListener('activate', event => {
     })
   );
 });
-

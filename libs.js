@@ -82,7 +82,7 @@ function setLinks(name, longitude, latitude) {
     const osm = document.querySelector('#osm-'+name);
     const geo = document.querySelector('#geo-'+name);
 
-    geo.href = `https://www.geoportail.gouv.fr/carte?c=${longitude},${latitude}&z=13&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes`;
+    geo.href = `https://www.geoportail.gouv.fr/carte?c=${longitude},${latitude}&z=30&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes`;
     geo.textContent = `Geoportail`;
 
     osm.href = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}`;

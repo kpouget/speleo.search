@@ -1,6 +1,7 @@
 var target_lat = 0;
 var target_lon = 0;
 var name = "non définie"
+var gps_success_function = undefined
 
 function setTarget() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -26,6 +27,10 @@ function setTarget() {
 
     document.title = `Cherche le trou: ${name}`
 
+    simple_map_dest_loc = {
+        lat: target_lat,    // Latitude
+        lng: target_lon     // Longitude
+    };
 }
 
 function init() {
@@ -56,33 +61,63 @@ function refreshGPSAge() {
     loc_age.textContent = `Age du point GPS:: ${ts_to_hms_dist(start_ts)} `
 }
 
-function success(position) {
-    const status = document.querySelector('#status');
-
+function update_position(position) {
     const latitude  = position.coords.latitude;
     const longitude = position.coords.longitude;
 
+    const status = document.querySelector('#status');
     status.textContent = `status: Localisé`
-
     loc_age.dataset.start_ts = position.timestamp
     refreshGPSAge()
+
     try {
         gps_accuracy.textContent = `Précision du point GPS: +/- ${distWithUnit(Math.trunc(position.coords.accuracy))}`
     } catch (error) {
         gps_accuracy.textContent = `Précision du point GPS: error ${error}`
     }
 
-    var dist = calcCrow(target_lat, target_lon, latitude, longitude)
-
-    distance.textContent = `${distWithUnit(dist)} à vol d'oiseau`;
-
-    var bear = calcBearing(latitude, longitude, target_lat, target_lon)
-    bearing.textContent = `Direction de la cible: ${bearing_to_cardinal(bear)} (${bear.toFixed(0)}°)`;
     if (position.coords.heading != null) {
         heading.textContent = `Direction actuelle: ${bearing_to_cardinal(position.coords.heading)} (${position.coords.heading.toFixed(0)}°)`;
     } else {
         heading.textContent = `Direction actuelle: inconnue`;
     }
+
+    lonlat.textContent = `lat=${latitude.toFixed(4)}° lon=${longitude.toFixed(4)}°`
+
+    if (typeof simple_map_add_to_path !== 'undefined') {
+        simple_map_add_to_path({lng: longitude, lat: latitude}, position.coords.heading)
+    }
+}
+
+function update_cave_distances(position) {
+    update_position(position);
+
+    const latitude  = position.coords.latitude;
+    const longitude = position.coords.longitude;
+
+    Array.prototype.filter.call(document.getElementsByClassName("cave"), function(elt){
+        var dist = calcCrow(elt.dataset.latitude, elt.dataset.longitude, latitude, longitude)
+        elt.dataset.distance = dist;
+        elt.parentNode.dataset.distance = dist;
+        elt.parentNode.querySelector("span.distance").textContent = `${distWithUnit(dist)}`;
+    });
+
+    var list = document.querySelector('#cave_list');
+
+    [...list.children]
+        .sort((a, b) => parseInt(a.dataset.distance) > parseInt(b.dataset.distance) ? 1 : -1)
+        .forEach(node => list.appendChild(node));
+}
+
+function update_target(position) {
+    update_position(position)
+
+    const latitude  = position.coords.latitude;
+    const longitude = position.coords.longitude;
+
+    var dist = calcCrow(target_lat, target_lon, latitude, longitude)
+
+    distance.textContent = `${distWithUnit(dist)} à vol d'oiseau`;
 
     var distNorth = calcCrow(target_lat, target_lon, latitude, target_lon)
     const dirLat = (latitude < target_lat) ? "Nord" : "Sud";
@@ -93,7 +128,8 @@ function success(position) {
 
     east.textContent = `${distWithUnit(distEast)} à l'${dirLon}`;
 
-    lonlat.textContent = `lat=${latitude.toFixed(4)}° lon=${longitude.toFixed(4)}°`
+    var bear = calcBearing(latitude, longitude, target_lat, target_lon)
+    bearing.textContent = `Direction de la cible: ${bearing_to_cardinal(bear)} (${bear.toFixed(0)}°)`;
 
     setLinks("current", longitude, latitude)
 }
@@ -106,17 +142,18 @@ function error(error) {
 var cfg = {maximumAge: 0,
            enableHighAccuracy: true};
 var tracking_id = null;
+
 function findMeOnce() {
     const status = document.querySelector('#status');
     if(!navigator.geolocation) {
         status.textContent = `status: Geolocation non supportée...`;
     } else {
         status.textContent = heure() + ' Localisation en cours…';
-        navigator.geolocation.getCurrentPosition(success, error, cfg);
+        navigator.geolocation.getCurrentPosition(gps_success_function, error, cfg);
     }
 }
 
-function followMe() {
+function followMe(success_fct) {
     const status = document.querySelector('#status');
     if (tracking_id != null) {
         status.textContent = 'status: Suivi déjà activé ...';
@@ -124,7 +161,7 @@ function followMe() {
         status.textContent = 'status: Geolocation non supportée.';
     } else {
         status.textContent = heure() + ' Activation du suivi en cours…';
-        tracking_id = navigator.geolocation.watchPosition(success, error, cfg);
+        tracking_id = navigator.geolocation.watchPosition(gps_success_function, error, cfg);
         tracking.textContent = `Suivi en cours.`
     }
 }
@@ -141,4 +178,50 @@ function forgetMe() {
         tracking_id = null;
         tracking.textContent = "."
     }
+}
+
+function indexSearch() {
+    let text = this.value;
+
+    document.querySelectorAll('#cave_list li').forEach(function(entry) {
+        let has_it = entry.innerText.toLowerCase().includes(text.toLowerCase());
+
+        entry.style.display = has_it ? "block" : "none";
+    });
+}
+
+function init_index() {
+    initPWA()
+
+    gps_success_function = update_cave_distances
+    document.querySelector('#find-me').addEventListener('click', findMeOnce);
+
+    status.textContent = "find me once";
+    findMeOnce()
+
+    function delay(fn, ms) {
+        let timer = 0
+        return function(...args) {
+            clearTimeout(timer)
+            timer = setTimeout(fn.bind(this, ...args), ms || 0)
+        }
+    }
+    document.querySelector('#search').addEventListener('keyup', delay(indexSearch, 500));
+    document.querySelector('#search').value = "";
+}
+
+function init_cherche() {
+    init()
+    initPWA()
+
+    setTarget()
+    gps_success_function = update_target;
+    document.querySelector('#find-me').addEventListener('click', findMeOnce);
+    document.querySelector('#follow-me').addEventListener('click', followMe);
+    document.querySelector('#forget-me').addEventListener('click', forgetMe);
+
+    status.textContent = "find me once";
+    findMeOnce()
+
+    init_simple_map();
 }

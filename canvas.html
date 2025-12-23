@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cherche le trou du Lot</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width">
+    <meta name="theme-color" content="#3367D6">
+    <link rel="manifest" href="manifest.pwa" crossorigin="use-credentials">
+    <link rel="apple-touch-icon" href="/speleo.png">
+    <link rel="shortcut icon" href="favicon.png" type="image/png"/>
+
+    <script type="text/javascript" src="libs.js"></script>
+    <script type="text/javascript" src="trouve.js"></script>
+    <script type="text/javascript" src="pwa.js"></script>
+
+    <style>
+      #targetName {
+          font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="move">Move</button>
+    <p>
+    <canvas id="myCanvas" width="1" height="1" style="border:1px solid #d3d3d3;">
+      Your browser does not support the HTML5 canvas tag.</canvas>
+    </p>
+    <script>
+      var c = document.getElementById("myCanvas");
+
+      //top-left reference point
+      var p0 = {
+          scrX: 20,        // Minimum X position on screen
+          scrY: 20,         // Minimum Y position on screen
+          lat: 0,    // Latitude
+          lng: 0     // Longitude
+      }
+
+      //bottom-right reference point
+      var p1 = {
+          scrX: 0,          // Maximum X position on screen
+          scrY: 0,        // Maximum Y position on screen
+          lat: 0,    // Latitude,
+          lng: 0     // Longitude
+      }
+
+      //## Now I can calculate the global X and Y for each reference point ##\\
+
+      // This function converts lat and lng coordinates to GLOBAL X and Y positions
+      function latlngToGlobalXY(pt) {
+          let lat = pt.lat;
+          let lng = pt.lng;
+
+          var radius = 6371;      //Earth Radius in Km
+
+          //Calculates x based on cos of average of the latitudes
+          let x = radius*lng*Math.cos((p0.lat + p1.lat)/2);
+          //Calculates y based on latitude
+          let y = radius*lat;
+
+          return {x: x, y: y}
+      }
+
+      /*
+       * This gives me the X and Y in relation to map for the 2 reference points.
+       * Now we have the global AND screen areas and then we can relate both for the projection point.
+       */
+
+      // This function converts lat and lng coordinates to SCREEN X and Y positions
+      function latlngToScreenXY(pt) {
+          //Calculate global X and Y for projection point
+          let pos = latlngToGlobalXY(pt);
+          //Calculate the percentage of Global X position in relation to total global width
+          pos.perX = ((pos.x-p0.pos.x)/(p1.pos.x - p0.pos.x));
+          //Calculate the percentage of Global Y position in relation to total global height
+          pos.perY = ((pos.y-p0.pos.y)/(p1.pos.y - p0.pos.y));
+
+          //Returns the screen position based on reference points
+          return {
+              x: p0.scrX + (p1.scrX - p0.scrX)*pos.perX,
+              y: p0.scrY + (p1.scrY - p0.scrY)*pos.perY
+          }
+      }
+
+      function moveLoc(pt, move) {
+          // Earth’s radius in meter, sphere
+          R = 6378137
+
+          // Coordinate offsets in radians
+          dLat = move.north/R
+          dLng = move.east/(R*Math.cos(Math.PI*pt.lat/180))
+
+          // OffsetPosition, decimal degrees
+          return {
+              lat: pt.lat + dLat * 180/Math.PI,
+              lng: pt.lng + dLng * 180/Math.PI
+          }
+      }
+
+      function rad(degrees) {
+          return degrees * (Math.PI/180);
+      }
+
+      function deg(radians) {
+          return radians * 180 / Math.PI;
+      }
+    </script>
+
+    <script>
+      var c = document.getElementById("myCanvas");
+      var ctx = c.getContext("2d");
+
+      function doResize() {
+          c.width = window.innerWidth * 0.95;
+          c.height = window.innerHeight * 0.95;
+
+          p1.scrX = c.width - 20;
+          p1.scrY = c.height - 20;
+      }
+      window.addEventListener('resize', () => {
+          doResize();
+          redraw();
+      })
+      doResize();
+
+      var CIRCLE_RADIUS = 20;
+
+      let path = [];
+      var path_index = 0;
+
+      function setStartPos(pos) {
+          path_index = 0;
+          path.length = 0;
+          path.push(pos);
+          path.push(pos);
+      }
+
+      function gotoCurrent() {
+          let current_xy = latlngToScreenXY(get_current_position());
+          ctx.moveTo(current_xy.x, current_xy.y);
+      }
+      function gotoPrevious() {
+          let previous_xy = latlngToScreenXY(get_previous_position());
+          ctx.moveTo(previous_xy.x, previous_xy.y);
+      }
+
+      function plotCircle(pos, color) {
+          ctx.beginPath();
+          gotoCurrent();
+
+          let current_xy = latlngToScreenXY(pos);
+          ctx.moveTo(current_xy.x + CIRCLE_RADIUS, current_xy.y)
+
+          ctx.arc(current_xy.x, current_xy.y, CIRCLE_RADIUS, 0, 2 * Math.PI);
+          ctx.fillStyle = color ? color : "green"
+          ctx.fill();
+          ctx.lineWidth = 3;
+
+          ctx.strokeStyle = '#003300';
+          ctx.stroke();
+          ctx.strokeStyle = 'blue';
+          ctx.moveTo(current_xy.x, current_xy.y);
+          ctx.closePath();
+      }
+
+      function drawLineToCurrent() {
+          ctx.beginPath();
+          gotoPrevious();
+
+          let current_pos = get_current_position()
+          let new_xy = latlngToScreenXY(current_pos);
+
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'black';
+
+          ctx.lineTo(new_xy.x, new_xy.y);
+          ctx.stroke();
+
+          ctx.closePath();
+      }
+
+      function plot_bearing(brng) {
+          let loc = get_point_at_bearing(brng, 100);
+          let pt = latlngToScreenXY(loc)
+
+          ctx.beginPath();
+          gotoCurrent();
+
+          ctx.lineTo(pt.x, pt.y);
+          ctx.strokeStyle = 'green';
+          ctx.stroke();
+
+          ctx.closePath();
+      }
+
+      function get_point_at_bearing(brng, dist) {
+          dist /= 6371000;
+          brng = rad(brng);
+
+          let last = get_current_position()
+
+          let lat1 = rad(last.lat)
+          let lon1 = rad(last.lng)
+
+          var lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist) +
+                                      Math.cos(lat1) * Math.sin(dist) * Math.cos(brng));
+          var lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist) * Math.cos(lat1),
+                                       Math.cos(dist) - Math.sin(lat1) * Math.sin(lat2));
+
+          let new_loc = {lat: deg(lat2), lng: deg(lon2)};
+
+          return new_loc;
+      }
+
+      function get_path_bearing() {
+          let previous = get_previous_position();
+          let current = get_current_position();
+
+          return calcBearing(previous.lat, previous.lng, current.lat, current.lng);
+      }
+
+      function mark_current_position() {
+          plotCircle(get_current_position(), "green");
+      }
+
+
+      function update_bound_box() {
+          p0.lng = start.lng;
+          p0.lat = start.lat;
+
+          p1.lng = target.lng;
+          p1.lat = target.lat;
+
+          for (pos of path) {
+              p0.lng = Math.min(p0.lng, pos.lng);
+              p0.lat = Math.max(p0.lat, pos.lat);
+
+              p1.lng = Math.max(p1.lng, pos.lng);
+              p1.lat = Math.min(p1.lat, pos.lat);
+          }
+
+          // Calculate global X and Y for top-left reference point
+          p0.pos = latlngToGlobalXY(p0);
+          // Calculate global X and Y for bottom-right reference point
+          p1.pos = latlngToGlobalXY(p1);
+      }
+
+      function get_current_position() {
+          if (path.length == 0) {
+              return
+          }
+
+          return path[path_index]
+      }
+
+      function get_previous_position() {
+          if (path.length == 0) {
+              return null
+          } else if (path.length == 1) {
+
+              return get_current_position();
+          } else {
+              return path[path_index - 1]
+          }
+      }
+
+      function plot_path() {
+          path_index = 1;
+          while (path_index < path.length) {
+              drawLineToCurrent();
+              path_index++;
+          }
+          path_index--;
+      }
+    </script>
+    <script>
+      let start = {
+          lat: -1.44853,    // Latitude
+          lng: -44.4396848     // Longitude
+      }
+      let target = {
+          lat: -1.46674,
+          lng: -44.4286078
+      }
+
+      let moves = [
+          {north: -100, east:    0},
+          {north:    0, east:  100},
+          {north:  200, east:    0},
+          {north: -100, east:  100},
+          {north:    0, east:  100},
+          {north:    0, east:  100},
+          {north:    0, east:  100},
+          {north: -100, east:  100},
+          {north: -100, east:  100},
+          {north: -100, east:  100},
+          {north: -100, east: -100},
+          {north: -100, east: -100},
+          {north: -100, east:  100},
+          {north:    0, east: -200},
+          {north: -100, east: -100},
+          {north: -100, east: -200},
+          {north: -100, east:  100},
+          {north: -100, east:  100},
+          {north: -100, east:  100},
+          {north:    0, east: -600},
+          {north: -200, east:    0},
+          {north: -200, east:  100},
+          {north: -100, east:  100},
+          {north: -100, east:  300},
+          {north: -200, east:  300},
+          {north:    0, east:  300},
+          {north: -150, east:  150}
+      ]
+    </script>
+    <script>
+      let start_loc = start;
+      let dest_loc = target;
+
+      var move_idx = 0;
+      update_bound_box()
+
+      setStartPos(start_loc);
+
+      plotCircle(start_loc);
+      plotCircle(dest_loc, "red");
+
+      let do_move = function() {
+          ctx.clearRect(0, 0, c.width, c.height);
+          setStartPos(start_loc);
+          var i = 0;
+          while (i <= move_idx) {
+              if (i >= moves.length) break;
+              path.push(moveLoc(path[path.length - 1], moves[i]));
+              i++;
+          }
+
+          redraw();
+
+          move_idx++;
+      }
+
+      function redraw() {
+          update_bound_box()
+
+          plotCircle(start_loc, "blue");
+          plotCircle(dest_loc, "red");
+
+          plot_path();
+
+          plot_bearing(get_path_bearing());
+          mark_current_position();
+      }
+
+      document.querySelector('#move').addEventListener('click', do_move);
+
+    </script>
+
+  </body>
+</html>
