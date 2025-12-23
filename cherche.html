@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Cherche le trou du Lot</title>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
+    <meta name="viewport" content="width=device-width">
+    <meta name="theme-color" content="#3367D6">
+    <link rel="manifest" href="manifest.pwa" crossorigin="use-credentials">
+    <link rel="apple-touch-icon" href="/speleo.png">
+    <link rel="shortcut icon" href="favicon.png" type="image/png"/>
+
+    <script type="text/javascript" src="/libs.js"></script>
+    <script type="text/javascript" src="/trouve.js"></script>
+    <script type="text/javascript" src="/pwa.js"></script>
+
+    <style>
+      #targetName {
+          font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <ul>
+      <li><a href="/">Retour à l'Index</a></li>
+    </ul>
+
+    <button id="find-me">Localiser</button>
+    <button id="follow-me">Suivre</button>
+    <button id="forget-me">Stopper</button>
+
+    <p id="status"></p>
+    <p id="tracking">.</p>
+    <p id="loc_age" data-start_ts="0">.</p>
+    <p id="gps_accuracy">.</p>
+    <hr/><hr/>
+    <p id="targetName"></p>
+
+    <hr/>
+    <p id="bearing"></p>
+    <p id="heading"></p>
+    <hr/>
+    <p id="distance"></p>
+    <p id="north"></p>
+    <p id="east"></p>
+    <hr/><hr/>
+    <p id="targetLoc"></p>
+    <p>Position actuelle:</p>
+    <p id="lonlat">(non calculée)</p>
+    <hr/><hr/>
+    <ul>
+      <li>Cible
+        <ul>
+          <li><a id="geo-target" target="_blank"></a></li>
+          <li><a id="osm-target" target="_blank"></a></li>
+        </ul>
+      </li>
+      <li>Position actuelle
+        <ul>
+          <li><a id="geo-current" target="_blank"></a></li>
+          <li><a id="osm-current" target="_blank"></a></li>
+        </ul>
+      </li>
+    </ul>
+    <hr/><hr/>
+    <ul>
+      <li><a href="/">Retour à l'Index</a></li>
+    </ul>
+
+    <script type="text/javascript">
+       (function() {
+           init()
+           initPWA()
+
+           setTarget()
+           document.querySelector('#find-me').addEventListener('click', findMeOnce);
+           document.querySelector('#follow-me').addEventListener('click', followMe);
+           document.querySelector('#forget-me').addEventListener('click', forgetMe);
+
+           status.textContent = "find me once";
+           findMeOnce()
+      })();
+    </script>
+  </body>
+</html>
