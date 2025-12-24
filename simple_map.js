@@ -581,6 +581,17 @@ function draw_compass() {
     // Clear canvas
     compass_ctx.clearRect(0, 0, compass_canvas.width, compass_canvas.height);
 
+    // Save context for rotation
+    compass_ctx.save();
+
+    // Rotate the entire compass face based on current heading
+    // So that North always points to magnetic north
+    if (current_heading !== null) {
+        compass_ctx.translate(centerX, centerY);
+        compass_ctx.rotate(-current_heading * Math.PI / 180); // Negative to rotate face opposite to heading
+        compass_ctx.translate(-centerX, -centerY);
+    }
+
     // Draw compass face background
     compass_ctx.beginPath();
     compass_ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
@@ -590,7 +601,7 @@ function draw_compass() {
     compass_ctx.lineWidth = 2;
     compass_ctx.stroke();
 
-    // Draw degree marks
+    // Draw degree marks (these will rotate with the face)
     compass_ctx.strokeStyle = '#7f8c8d';
     compass_ctx.lineWidth = 1;
     for (let angle = 0; angle < 360; angle += 15) {
@@ -609,26 +620,47 @@ function draw_compass() {
         compass_ctx.stroke();
     }
 
-    // Draw N/S/E/W labels
+    // Draw N/S/E/W labels (these will rotate with the face)
     compass_ctx.fillStyle = '#2c3e50';
     compass_ctx.font = 'bold 16px Arial';
     compass_ctx.textAlign = 'center';
     compass_ctx.textBaseline = 'middle';
 
     const labelRadius = radius - 25;
+
+    // North (red)
+    compass_ctx.fillStyle = '#e74c3c';
+    compass_ctx.font = 'bold 18px Arial';
     compass_ctx.fillText('N', centerX, centerY - labelRadius);
+
+    // Other directions (black)
+    compass_ctx.fillStyle = '#2c3e50';
+    compass_ctx.font = 'bold 16px Arial';
     compass_ctx.fillText('S', centerX, centerY + labelRadius);
     compass_ctx.fillText('E', centerX + labelRadius, centerY);
     compass_ctx.fillText('O', centerX - labelRadius, centerY);
 
-    // Draw target bearing needle (red)
+    // Restore context (stop rotation)
+    compass_ctx.restore();
+
+    // Draw target bearing needle (red) - fixed to screen, points to target
     if (target_bearing !== null) {
-        draw_compass_needle(centerX, centerY, radius - 30, target_bearing, '#e74c3c', 4, 'Cible');
+        if (current_heading !== null) {
+            // Calculate relative bearing (target bearing relative to current heading)
+            let relativeBearing = target_bearing - current_heading;
+            if (relativeBearing < 0) relativeBearing += 360;
+            if (relativeBearing >= 360) relativeBearing -= 360;
+            draw_compass_needle(centerX, centerY, radius - 30, relativeBearing, '#e74c3c', 4, 'Cible');
+        } else {
+            // No phone heading available, show absolute target bearing
+            draw_compass_needle(centerX, centerY, radius - 30, target_bearing, '#e74c3c', 4, 'Cible');
+        }
     }
 
-    // Draw current heading needle (blue) - on top
+    // Draw phone direction indicator (blue arrow pointing up)
+    // This shows which way the phone is pointing - always points up when heading is available
     if (current_heading !== null) {
-        draw_compass_needle(centerX, centerY, radius - 40, current_heading, '#3498db', 3, 'Cap');
+        draw_compass_needle(centerX, centerY, radius - 40, 0, '#3498db', 3, 'Téléphone');
     }
 
     // Draw center dot
@@ -636,6 +668,16 @@ function draw_compass() {
     compass_ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
     compass_ctx.fillStyle = '#34495e';
     compass_ctx.fill();
+
+    // Show message if no heading available
+    if (current_heading === null) {
+        compass_ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        compass_ctx.font = '12px Arial';
+        compass_ctx.textAlign = 'center';
+        compass_ctx.textBaseline = 'middle';
+        compass_ctx.fillText('Orientation non', centerX, centerY + 25);
+        compass_ctx.fillText('disponible', centerX, centerY + 40);
+    }
 }
 
 function draw_compass_needle(centerX, centerY, length, angle, color, lineWidth, label) {
