@@ -83,14 +83,17 @@ function update_position(position) {
     }
 
     if (position.coords.heading != null) {
-        heading.textContent = `Direction actuelle: ${bearing_to_cardinal(position.coords.heading)} (${position.coords.heading.toFixed(0)}°)`;
+        // Only use GPS heading if device orientation compass isn't working
+        if (typeof current_heading === 'undefined' || current_heading === null) {
+            heading.innerHTML = `Direction actuelle:<br>${bearing_to_cardinal(position.coords.heading)} (${position.coords.heading.toFixed(0)}°) (GPS)`;
 
-        // Update compass with current heading
-        if (typeof update_compass_heading !== 'undefined') {
-            update_compass_heading(position.coords.heading);
+            // Update compass with GPS heading only if device orientation isn't available
+            if (typeof update_compass_heading !== 'undefined') {
+                update_compass_heading(position.coords.heading);
+            }
         }
-    } else {
-        heading.textContent = `Direction actuelle: inconnue`;
+    } else if (typeof current_heading === 'undefined' || current_heading === null) {
+        heading.innerHTML = `Direction actuelle:<br>inconnue`;
     }
 
     const currentCoordText = `lat=${latitude.toFixed(4)}° lon=${longitude.toFixed(4)}°`;
@@ -147,7 +150,7 @@ function update_target(position) {
     east.textContent = `${distWithUnit(distEast)} à l'${dirLon}`;
 
     var bear = calcBearing(latitude, longitude, target_lat, target_lon)
-    bearing.textContent = `Direction de la cible: ${bearing_to_cardinal(bear)} (${bear.toFixed(0)}°)`;
+    bearing.innerHTML = `Direction vers la cible:<br>${bearing_to_cardinal(bear)} (${bear.toFixed(0)}°)`;
 
     // Update compass with target bearing
     if (typeof update_compass_target_bearing !== 'undefined') {

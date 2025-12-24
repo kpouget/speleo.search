@@ -735,6 +735,98 @@ function init_compass() {
         compass_canvas.height = size;
 
         draw_compass();
+
+        // Request permission for device orientation (iOS 13+)
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        startCompass();
+                    } else {
+                        console.log('Device orientation permission denied');
+                    }
+                })
+                .catch(error => {
+                    console.log('Error requesting device orientation permission:', error);
+                    // Try without permission request (older browsers)
+                    startCompass();
+                });
+        } else {
+            // For browsers that don't require permission
+            startCompass();
+        }
+    }
+}
+
+function startCompass() {
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        console.log('Compass orientation listeners added');
+    } else {
+        console.log('Device orientation not supported');
+    }
+}
+
+let lastHeading = null;
+let lastUpdateTime = 0;
+const HEADING_UPDATE_INTERVAL = 100; // Update every 100ms for smoothness
+const ERRATIC_JUMP_THRESHOLD = 30; // Filter jumps > 30°
+
+function handleOrientation(event) {
+    let heading = null;
+
+    // Try to get absolute heading first (more accurate)
+    if (event.webkitCompassHeading) {
+        // iOS Safari
+        heading = event.webkitCompassHeading;
+    } else if (event.alpha !== null && event.alpha !== undefined) {
+        // Android Chrome and others
+        if (event.absolute === true || event.type === 'deviceorientationabsolute') {
+            heading = 360 - event.alpha; // Convert to compass heading
+        } else {
+            heading = 360 - event.alpha; // Best guess without magnetic declination
+        }
+    }
+
+    // Filter out invalid readings
+    if (heading === null || heading === undefined || isNaN(heading)) {
+        return;
+    }
+
+    // Normalize heading to 0-360
+    heading = ((heading % 360) + 360) % 360;
+
+    // Light debounce - only update every 100ms for smoothness
+    const now = Date.now();
+    if (now - lastUpdateTime < HEADING_UPDATE_INTERVAL) {
+        return;
+    }
+
+    // Filter out erratic jumps (but allow gradual changes)
+    if (lastHeading !== null) {
+        // Calculate smallest difference accounting for wrap-around
+        let diff = Math.abs(heading - lastHeading);
+        let diffWrap1 = Math.abs(heading - lastHeading + 360);
+        let diffWrap2 = Math.abs(heading - lastHeading - 360);
+        let minDiff = Math.min(diff, diffWrap1, diffWrap2);
+
+        // Reject erratic jumps but allow all reasonable changes
+        if (minDiff > ERRATIC_JUMP_THRESHOLD) {
+            console.log(`Filtering erratic jump: ${lastHeading}° → ${heading}° (${minDiff}°)`);
+            return;
+        }
+    }
+
+    lastHeading = heading;
+    lastUpdateTime = now;
+
+    update_compass_heading(heading);
+
+    // Also update the text display
+    const headingElement = document.querySelector('#heading');
+    if (headingElement) {
+        headingElement.innerHTML = `Direction actuelle:<br>${bearing_to_cardinal(heading)} (${Math.round(heading)}°)`;
     }
 }
 
