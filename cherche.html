@@ -11,11 +11,11 @@
     <link rel="apple-touch-icon" href="/speleo.png">
     <link rel="shortcut icon" href="favicon.png" type="image/png"/>
 
-    <script type="text/javascript" src="libs.js?v=1735230000"></script>
-    <script type="text/javascript" src="trouve.js?v=1735230000"></script>
-    <script type="text/javascript" src="simple_map.js?v=1735230000"></script>
+    <script type="text/javascript" src="libs.js?v=1735230400"></script>
+    <script type="text/javascript" src="trouve.js?v=1735230400"></script>
+    <script type="text/javascript" src="simple_map.js?v=1735230400"></script>
 
-    <script type="text/javascript" src="pwa.js?v=1735230000"></script>
+    <script type="text/javascript" src="pwa.js?v=1735230400"></script>
 
     <style>
       * {
@@ -265,6 +265,41 @@
         opacity: 0;
       }
 
+      /* Collapsible Panels */
+      .panel-header {
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.2s;
+      }
+
+      .panel-header:hover {
+        color: #3498db;
+      }
+
+      .panel-header::after {
+        content: " ▼";
+        font-size: 0.8rem;
+        transition: transform 0.2s;
+        float: right;
+      }
+
+      .collapsed .panel-header::after {
+        transform: rotate(-90deg);
+        content: " ▶";
+      }
+
+      .panel-content {
+        transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+        max-height: 1000px;
+        opacity: 1;
+        overflow: hidden;
+      }
+
+      .collapsed .panel-content {
+        max-height: 0;
+        opacity: 0;
+      }
+
       .legend-item {
         display: flex;
         align-items: center;
@@ -483,51 +518,54 @@
       </section>
 
       <!-- Status Panel -->
-      <section class="status-panel">
-        <h2>📡 État GPS</h2>
-        <div class="status-item">
-          <span class="label">État:</span>
-          <span class="value" id="status">En attente...</span>
-        </div>
-        <div class="status-item">
-          <span class="label">Suivi:</span>
-          <span class="value" id="tracking">.</span>
-        </div>
-        <div class="status-item">
-          <span class="label">Age du point GPS:</span>
-          <span class="value" id="loc_age" data-start_ts="0">.</span>
-        </div>
-        <div class="status-item">
-          <span class="label">Précision:</span>
-          <span class="value" id="gps_accuracy">.</span>
-        </div>
-        <div class="status-item">
-          <span class="label">Position actuelle:</span>
-          <span class="value" id="lonlat">(non calculée)</span>
+      <section class="status-panel" id="gpsPanel">
+        <h2 class="panel-header" id="gpsPanelHeader">📡 État GPS</h2>
+        <div class="panel-content">
+          <div class="status-item">
+            <span class="label">État:</span>
+            <span class="value" id="status">En attente...</span>
+          </div>
+          <div class="status-item">
+            <span class="label">Suivi:</span>
+            <span class="value" id="tracking">.</span>
+          </div>
+          <div class="status-item">
+            <span class="label">Age du point GPS:</span>
+            <span class="value" id="loc_age" data-start_ts="0">.</span>
+          </div>
+          <div class="status-item">
+            <span class="label">Précision:</span>
+            <span class="value" id="gps_accuracy">.</span>
+          </div>
+          <div class="status-item">
+            <span class="label">Position actuelle:</span>
+            <span class="value" id="lonlat">(non calculée)</span>
+          </div>
         </div>
       </section>
 
       <!-- External Links Panel -->
-      <section class="links-panel">
-        <h2>🌐 Cartes Externes</h2>
-
-        <div class="link-group">
-          <h3>🎯 Cible</h3>
-          <div class="coordinates" id="targetLoc-copy">Coordonnées de la cible</div>
-          <div class="map-links">
-            <a id="geo-target" target="_blank" class="map-link geo">Geoportail</a>
-            <a id="osm-target" target="_blank" class="map-link">OpenStreetMap</a>
-            <a id="google-target" target="_blank" class="map-link google">Google Maps</a>
+      <section class="links-panel" id="linksPanel">
+        <h2 class="panel-header" id="linksPanelHeader">🌐 Cartes Externes</h2>
+        <div class="panel-content">
+          <div class="link-group">
+            <h3>🎯 Cible</h3>
+            <div class="coordinates" id="targetLoc-copy">Coordonnées de la cible</div>
+            <div class="map-links">
+              <a id="geo-target" target="_blank" class="map-link geo">Geoportail</a>
+              <a id="osm-target" target="_blank" class="map-link">OpenStreetMap</a>
+              <a id="google-target" target="_blank" class="map-link google">Google Maps</a>
+            </div>
           </div>
-        </div>
 
-        <div class="link-group">
-          <h3>📍 Position actuelle</h3>
-          <div class="coordinates" id="lonlat-copy">Position en attente GPS...</div>
-          <div class="map-links">
-            <a id="geo-current" target="_blank" class="map-link geo">Geoportail</a>
-            <a id="osm-current" target="_blank" class="map-link">OpenStreetMap</a>
-            <a id="google-current" target="_blank" class="map-link google">Google Maps</a>
+          <div class="link-group">
+            <h3>📍 Position actuelle</h3>
+            <div class="coordinates" id="lonlat-copy">Position en attente GPS...</div>
+            <div class="map-links">
+              <a id="geo-current" target="_blank" class="map-link geo">Geoportail</a>
+              <a id="osm-current" target="_blank" class="map-link">OpenStreetMap</a>
+              <a id="google-current" target="_blank" class="map-link google">Google Maps</a>
+            </div>
           </div>
         </div>
       </section>
@@ -621,23 +659,43 @@
            if (document.readyState === 'loading') {
                document.addEventListener('DOMContentLoaded', function() {
                    init_cherche();
-                   initLegendToggle();
+                   initCollapsiblePanels();
                });
            } else {
                init_cherche();
-               initLegendToggle();
+               initCollapsiblePanels();
            }
       })();
 
-      function initLegendToggle() {
-          const legendTitle = document.getElementById('legendTitle');
-          const mapLegend = document.getElementById('mapLegend');
+      function initCollapsiblePanels() {
+          // Initialize collapsible functionality for all panels
+          const panels = [
+              { headerId: 'gpsPanelHeader', panelId: 'gpsPanel', storageKey: 'gpsPanel-collapsed' },
+              { headerId: 'linksPanelHeader', panelId: 'linksPanel', storageKey: 'linksPanel-collapsed' },
+              { headerId: 'legendTitle', panelId: 'mapLegend', storageKey: 'mapLegend-collapsed' }
+          ];
 
-          if (legendTitle && mapLegend) {
-              legendTitle.addEventListener('click', function() {
-                  mapLegend.classList.toggle('collapsed');
-              });
-          }
+          panels.forEach(panel => {
+              const header = document.getElementById(panel.headerId);
+              const panelElement = document.getElementById(panel.panelId);
+
+              if (header && panelElement) {
+                  // Restore saved state from localStorage
+                  const isCollapsed = localStorage.getItem(panel.storageKey) === 'true';
+                  if (isCollapsed) {
+                      panelElement.classList.add('collapsed');
+                  }
+
+                  // Add click handler
+                  header.addEventListener('click', function() {
+                      panelElement.classList.toggle('collapsed');
+
+                      // Save state to localStorage
+                      const collapsed = panelElement.classList.contains('collapsed');
+                      localStorage.setItem(panel.storageKey, collapsed);
+                  });
+              }
+          });
       }
     </script>
   </body>
