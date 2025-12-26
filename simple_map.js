@@ -575,6 +575,8 @@ var compass_ctx = null;
 var current_heading = null;
 var target_bearing = null;
 var orientation_events_added = false;
+var lastAlphaValue = null;
+var compassEventType = ""; // Track which event type is being used
 
 let simple_map_dest_loc = {lat: null, lng: null};
 
@@ -803,8 +805,14 @@ function init_compass() {
 
 function startCompass() {
     if (window.DeviceOrientationEvent) {
-        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-        window.addEventListener('deviceorientation', handleOrientation, true);
+        // Priority approach like NOAA compass
+        if ('ondeviceorientationabsolute' in window) {
+            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+            compassEventType = "absolute";
+        } else {
+            window.addEventListener('deviceorientation', handleOrientation, true);
+            compassEventType = "relative";
+        }
         orientation_events_added = true;
         console.log('Compass orientation listeners added');
     } else {
@@ -820,18 +828,29 @@ const ERRATIC_JUMP_THRESHOLD = 30; // Filter jumps > 30°
 
 function handleOrientation(event) {
     let heading = null;
+    let debugSource = "";
 
-    // Try to get absolute heading first (more accurate)
-    if (event.webkitCompassHeading) {
-        // iOS Safari
+    // Platform-specific handling like NOAA compass
+    if (event.webkitCompassHeading !== undefined) {
+        // iOS Safari - use webkit compass heading directly
         heading = event.webkitCompassHeading;
+        debugSource = "webkit";
     } else if (event.alpha !== null && event.alpha !== undefined) {
-        // Android Chrome and others
-        if (event.absolute === true || event.type === 'deviceorientationabsolute') {
-            heading = 360 - event.alpha; // Convert to compass heading
-        } else {
-            heading = 360 - event.alpha; // Best guess without magnetic declination
+        // Android and other platforms
+        let alpha = event.alpha;
+
+        // Apply orientation corrections for landscape mode
+        if (window.orientation === 90) {
+            alpha = alpha - 90;
+        } else if (window.orientation === -90) {
+            alpha = alpha + 90;
+        } else if (window.orientation === 180) {
+            alpha = alpha + 180;
         }
+
+        // Convert to compass heading (NOAA style)
+        heading = 360 - alpha;
+        debugSource = compassEventType;
     }
 
     // Filter out invalid readings
@@ -872,12 +891,25 @@ function handleOrientation(event) {
     compass_bearing = heading;
     redraw();
 
-    // Also update the text display
+    // Check for α value jumps
+    let alphaJump = "";
+    if (lastAlphaValue !== null && event.alpha !== null) {
+        let alphaDiff = Math.abs(event.alpha - lastAlphaValue);
+        if (alphaDiff > 180) alphaDiff = 360 - alphaDiff; // Handle wrap-around
+        if (alphaDiff > 30) {
+            alphaJump = ` ⚠️${alphaDiff.toFixed(0)}°`;
+        }
+    }
+    lastAlphaValue = event.alpha;
+
+    // Also update the text display with debug info
     const headingElement = document.querySelector('#heading');
     if (headingElement) {
-        headingElement.innerHTML = `Direction actuelle:<br>${bearing_to_cardinal(heading)} (${Math.round(heading)}°)`;
+        let orientationInfo = window.orientation !== undefined ? ` | ori:${window.orientation}°` : '';
+        headingElement.innerHTML = `Direction actuelle:<br>${bearing_to_cardinal(heading)} (${Math.round(heading)}°)<br><small>Source: ${debugSource}${orientationInfo}<br>Raw: α=${event.alpha?.toFixed(1)}${alphaJump} β=${event.beta?.toFixed(1)} γ=${event.gamma?.toFixed(1)}</small>`;
     }
 }
+
 
 function init_simple_map() {
     c = document.getElementById("simple_map");
