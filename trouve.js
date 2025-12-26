@@ -168,6 +168,7 @@ function error(error) {
 var cfg = {maximumAge: 0,
            enableHighAccuracy: true};
 var tracking_id = null;
+var wakeLock = null;
 
 function findMeOnce() {
     const status = document.querySelector('#status');
@@ -189,6 +190,9 @@ function followMe(success_fct) {
         status.textContent = heure() + ' Activation du suivi en cours…';
         tracking_id = navigator.geolocation.watchPosition(gps_success_function, error, cfg);
         tracking.textContent = `Suivi en cours.`
+
+        // Prevent phone from sleeping during tracking
+        requestWakeLock();
     }
     updateButtonVisibility();
 }
@@ -204,6 +208,9 @@ function forgetMe() {
         navigator.geolocation.clearWatch(tracking_id);
         tracking_id = null;
         tracking.textContent = "."
+
+        // Allow phone to sleep again
+        releaseWakeLock();
     }
     updateButtonVisibility();
 }
@@ -212,30 +219,53 @@ function updateButtonVisibility() {
     try {
         const followBtn = document.querySelector('#follow-me');
         const forgetBtn = document.querySelector('#forget-me');
-        const status = document.querySelector('#status');
-
-        // Mobile debug - show current state
-        const debugMsg = `[BTN DEBUG] tracking_id=${tracking_id} followBtn=${!!followBtn} forgetBtn=${!!forgetBtn}`;
-        if (status) status.textContent += ' ' + debugMsg;
 
         if (followBtn && forgetBtn) {
             if (tracking_id == null) {
                 // Not tracking - show Suivre, hide Stopper
                 followBtn.style.display = 'inline-block';
                 forgetBtn.style.display = 'none';
-                if (status) status.textContent += ' [SHOWING Suivre]';
             } else {
                 // Tracking - hide Suivre, show Stopper
                 followBtn.style.display = 'none';
                 forgetBtn.style.display = 'inline-block';
-                if (status) status.textContent += ' [SHOWING Stopper]';
             }
-        } else {
-            if (status) status.textContent += ' [BUTTONS MISSING]';
         }
     } catch (error) {
+        console.log('Button visibility update failed:', error);
+    }
+}
+
+// Wake Lock functions to prevent phone sleep during tracking
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Wake lock acquired - screen will stay on during tracking');
+
+            wakeLock.addEventListener('release', () => {
+                console.log('Wake lock released');
+                // If tracking is still active, try to reacquire wake lock
+                if (tracking_id != null) {
+                    setTimeout(requestWakeLock, 100);
+                }
+            });
+        }
+    } catch (error) {
+        console.log('Wake lock failed:', error);
+        // Fallback for older browsers - request user to keep screen on
         const status = document.querySelector('#status');
-        if (status) status.textContent += ' [BTN ERROR: ' + error.message + ']';
+        if (status && status.textContent.indexOf('Maintenez') === -1) {
+            status.textContent += ' [Maintenez l\'écran allumé]';
+        }
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+        console.log('Wake lock released - phone can sleep normally');
     }
 }
 
