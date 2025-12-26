@@ -1,4 +1,4 @@
-const cacheName = "ChercheLeTrou-20241226_1640";
+const cacheName = "ChercheLeTrou-20241226_1745";
 const contentToCache = [
     "libs.js",
     "trouve.js",
@@ -29,8 +29,16 @@ self.addEventListener('install', (e) => {
 
 function removeQuery(request) {
 var url = new URL(request.url);
-    url.search = '';
-    url.fragment = '';
+
+    // Preserve version parameters for JavaScript files to enable cache busting
+    if (url.pathname.endsWith('.js') && url.search.includes('v=')) {
+        // Keep the version parameter for JS files
+        url.fragment = '';
+    } else {
+        // Remove all query parameters for other files
+        url.search = '';
+        url.fragment = '';
+    }
 
     return new Request(url, {
         method: request.method,

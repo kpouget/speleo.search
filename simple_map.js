@@ -177,6 +177,44 @@ function plot_bearing(brng, color, lineStyle) {
     ctx.closePath();
 }
 
+function plot_compass_bearing_from_center() {
+    if (compass_bearing == null) return;
+
+    // Use center of map when no GPS position available
+    const centerX = c.width / 2;
+    const centerY = c.height / 2;
+
+    const radian = (compass_bearing - 90) * Math.PI / 180; // -90 to make 0° point north
+    const lineLength = 80; // Fixed length for compass line
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'orange';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+
+    // Draw line from center outward in compass direction
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(
+        centerX + lineLength * Math.cos(radian),
+        centerY + lineLength * Math.sin(radian)
+    );
+
+    // Add arrow head
+    const arrowLength = 12;
+    const arrowAngle = Math.PI / 6; // 30 degrees
+    const tipX = centerX + lineLength * Math.cos(radian);
+    const tipY = centerY + lineLength * Math.sin(radian);
+
+    ctx.lineTo(tipX - arrowLength * Math.cos(radian - arrowAngle),
+               tipY - arrowLength * Math.sin(radian - arrowAngle));
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - arrowLength * Math.cos(radian + arrowAngle),
+               tipY - arrowLength * Math.sin(radian + arrowAngle));
+
+    ctx.stroke();
+    ctx.closePath();
+}
+
 function plot_target_bearing() {
     let current = get_current_position();
     if (current == null || simple_map_dest_loc.lat == null) {
@@ -536,6 +574,7 @@ var compass_canvas = null;
 var compass_ctx = null;
 var current_heading = null;
 var target_bearing = null;
+var orientation_events_added = false;
 
 let simple_map_dest_loc = {lat: null, lng: null};
 
@@ -555,8 +594,14 @@ function redraw() {
 
     // Show direction indicators
     plot_bearing(get_path_bearing(), "green");           // Movement direction
+
+    // Show compass bearing (orange line)
     if (compass_bearing != null) {
-        plot_bearing(compass_bearing, "orange");         // Device compass
+        if (get_current_position() != null) {
+            plot_bearing(compass_bearing, "orange");     // Device compass from GPS position
+        } else {
+            plot_compass_bearing_from_center();          // Device compass from map center
+        }
     }
     plot_target_bearing();                               // Direction to target (red arrow)
 
@@ -642,24 +687,23 @@ function draw_compass() {
     // Restore context (stop rotation)
     compass_ctx.restore();
 
-    // Draw target bearing needle (red) - fixed to screen, points to target
+    // Draw target bearing needle (red) - no label
     if (target_bearing !== null) {
         if (current_heading !== null) {
             // Calculate relative bearing (target bearing relative to current heading)
             let relativeBearing = target_bearing - current_heading;
             if (relativeBearing < 0) relativeBearing += 360;
             if (relativeBearing >= 360) relativeBearing -= 360;
-            draw_compass_needle(centerX, centerY, radius - 30, relativeBearing, '#e74c3c', 4, 'Cible');
+            draw_compass_needle(centerX, centerY, radius - 30, relativeBearing, '#e74c3c', 4, '');
         } else {
             // No phone heading available, show absolute target bearing
-            draw_compass_needle(centerX, centerY, radius - 30, target_bearing, '#e74c3c', 4, 'Cible');
+            draw_compass_needle(centerX, centerY, radius - 30, target_bearing, '#e74c3c', 4, '');
         }
     }
 
-    // Draw phone direction indicator (blue arrow pointing up)
-    // This shows which way the phone is pointing - always points up when heading is available
+    // Draw phone direction indicator (blue arrow pointing up) - no label
     if (current_heading !== null) {
-        draw_compass_needle(centerX, centerY, radius - 40, 0, '#3498db', 3, 'Téléphone');
+        draw_compass_needle(centerX, centerY, radius - 20, 0, '#3498db', 3, '');
     }
 
     // Draw center dot
@@ -761,8 +805,10 @@ function startCompass() {
     if (window.DeviceOrientationEvent) {
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
         window.addEventListener('deviceorientation', handleOrientation, true);
+        orientation_events_added = true;
         console.log('Compass orientation listeners added');
     } else {
+        orientation_events_added = false;
         console.log('Device orientation not supported');
     }
 }
@@ -821,6 +867,10 @@ function handleOrientation(event) {
     lastUpdateTime = now;
 
     update_compass_heading(heading);
+
+    // Update map compass bearing line in real-time
+    compass_bearing = heading;
+    redraw();
 
     // Also update the text display
     const headingElement = document.querySelector('#heading');

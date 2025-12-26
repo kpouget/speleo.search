@@ -11,11 +11,11 @@
     <link rel="apple-touch-icon" href="/speleo.png">
     <link rel="shortcut icon" href="favicon.png" type="image/png"/>
 
-    <script type="text/javascript" src="libs.js?v=1735225240"></script>
-    <script type="text/javascript" src="trouve.js?v=1735225240"></script>
-    <script type="text/javascript" src="simple_map.js?v=1735225240"></script>
+    <script type="text/javascript" src="libs.js?v=1735228000"></script>
+    <script type="text/javascript" src="trouve.js?v=1735228000"></script>
+    <script type="text/javascript" src="simple_map.js?v=1735228000"></script>
 
-    <script type="text/javascript" src="pwa.js?v=1735225240"></script>
+    <script type="text/javascript" src="pwa.js?v=1735228000"></script>
 
     <style>
       * {
@@ -233,6 +233,36 @@
         font-size: 1rem;
         font-weight: bold;
         text-align: center;
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.2s;
+      }
+
+      .map-legend h3:hover {
+        color: #3498db;
+      }
+
+      .map-legend h3::after {
+        content: " ▼";
+        font-size: 0.8rem;
+        transition: transform 0.2s;
+      }
+
+      .map-legend.collapsed h3::after {
+        transform: rotate(-90deg);
+        content: " ▶";
+      }
+
+      .legend-items {
+        transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+        max-height: 200px;
+        opacity: 1;
+        overflow: hidden;
+      }
+
+      .map-legend.collapsed .legend-items {
+        max-height: 0;
+        opacity: 0;
       }
 
       .legend-item {
@@ -505,38 +535,41 @@
       <!-- Map Section -->
       <section class="map-section">
         <h2>🗺️ Carte Offline</h2>
+
+        <!-- Map Legend -->
+        <div class="map-legend" id="mapLegend">
+          <h3 id="legendTitle">Légende</h3>
+          <div class="legend-items">
+            <div class="legend-item">
+              <span class="legend-symbol legend-circle" style="background: red;"></span>
+              <span class="legend-label">Cible</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-symbol legend-circle" style="background: green;"></span>
+              <span class="legend-label">Position actuelle</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-symbol legend-circle" style="background: blue;"></span>
+              <span class="legend-label">Départ</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-symbol legend-line" style="border-top: 2px dashed red;"></span>
+              <span class="legend-label">Direction cible</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-symbol legend-line" style="border-top: 2px solid green;"></span>
+              <span class="legend-label">Direction mouvement</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-symbol legend-line" style="border-top: 2px solid orange;"></span>
+              <span class="legend-label">Boussole</span>
+            </div>
+          </div>
+        </div>
+
         <canvas id="simple_map" width="1" height="1">
           Votre navigateur ne supporte pas le canvas HTML5.
         </canvas>
-
-        <!-- Map Legend -->
-        <div class="map-legend">
-          <h3>Légende</h3>
-          <div class="legend-item">
-            <span class="legend-symbol legend-circle" style="background: red;"></span>
-            <span class="legend-label">Cible</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-symbol legend-circle" style="background: green;"></span>
-            <span class="legend-label">Position actuelle</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-symbol legend-circle" style="background: blue;"></span>
-            <span class="legend-label">Départ</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-symbol legend-line" style="border-top: 2px dashed red;"></span>
-            <span class="legend-label">Direction cible</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-symbol legend-line" style="border-top: 2px solid green;"></span>
-            <span class="legend-label">Direction mouvement</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-symbol legend-line" style="border-top: 2px solid orange;"></span>
-            <span class="legend-label">Boussole</span>
-          </div>
-        </div>
       </section>
 
       <!-- Direction Panel -->
@@ -549,13 +582,7 @@
             Votre navigateur ne supporte pas le canvas HTML5.
           </canvas>
           <div class="compass-legend">
-            <div style="display: flex; justify-content: center; gap: 20px; font-size: 0.8rem; margin-top: 10px;">
-              <div style="color: #3498db;">🔹 Téléphone</div>
-              <div style="color: #e74c3c;">🔹 Direction cible</div>
-            </div>
-            <div style="text-align: center; font-size: 0.7rem; color: #7f8c8d; margin-top: 5px;">
-              Le N rouge pointe vers le nord magnétique
-            </div>
+            <!-- Legend text hidden per user request -->
           </div>
         </div>
 
@@ -592,11 +619,26 @@
        (function() {
            // Ensure DOM is fully loaded
            if (document.readyState === 'loading') {
-               document.addEventListener('DOMContentLoaded', init_cherche);
+               document.addEventListener('DOMContentLoaded', function() {
+                   init_cherche();
+                   initLegendToggle();
+               });
            } else {
                init_cherche();
+               initLegendToggle();
            }
       })();
+
+      function initLegendToggle() {
+          const legendTitle = document.getElementById('legendTitle');
+          const mapLegend = document.getElementById('mapLegend');
+
+          if (legendTitle && mapLegend) {
+              legendTitle.addEventListener('click', function() {
+                  mapLegend.classList.toggle('collapsed');
+              });
+          }
+      }
     </script>
   </body>
 </html>
