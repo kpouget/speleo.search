@@ -190,6 +190,7 @@ function followMe(success_fct) {
         tracking_id = navigator.geolocation.watchPosition(gps_success_function, error, cfg);
         tracking.textContent = `Suivi en cours.`
     }
+    updateButtonVisibility();
 }
 
 function forgetMe() {
@@ -203,6 +204,38 @@ function forgetMe() {
         navigator.geolocation.clearWatch(tracking_id);
         tracking_id = null;
         tracking.textContent = "."
+    }
+    updateButtonVisibility();
+}
+
+function updateButtonVisibility() {
+    try {
+        const followBtn = document.querySelector('#follow-me');
+        const forgetBtn = document.querySelector('#forget-me');
+        const status = document.querySelector('#status');
+
+        // Mobile debug - show current state
+        const debugMsg = `[BTN DEBUG] tracking_id=${tracking_id} followBtn=${!!followBtn} forgetBtn=${!!forgetBtn}`;
+        if (status) status.textContent += ' ' + debugMsg;
+
+        if (followBtn && forgetBtn) {
+            if (tracking_id == null) {
+                // Not tracking - show Suivre, hide Stopper
+                followBtn.style.display = 'inline-block';
+                forgetBtn.style.display = 'none';
+                if (status) status.textContent += ' [SHOWING Suivre]';
+            } else {
+                // Tracking - hide Suivre, show Stopper
+                followBtn.style.display = 'none';
+                forgetBtn.style.display = 'inline-block';
+                if (status) status.textContent += ' [SHOWING Stopper]';
+            }
+        } else {
+            if (status) status.textContent += ' [BUTTONS MISSING]';
+        }
+    } catch (error) {
+        const status = document.querySelector('#status');
+        if (status) status.textContent += ' [BTN ERROR: ' + error.message + ']';
     }
 }
 
@@ -242,12 +275,26 @@ function init_cherche() {
 
     setTarget()
     gps_success_function = update_target;
-    document.querySelector('#find-me').addEventListener('click', findMeOnce);
-    document.querySelector('#follow-me').addEventListener('click', followMe);
-    document.querySelector('#forget-me').addEventListener('click', forgetMe);
+    // Safe event listeners - check if elements exist first
+    const findBtn = document.querySelector('#find-me');
+    const followBtn = document.querySelector('#follow-me');
+    const forgetBtn = document.querySelector('#forget-me');
+
+    if (findBtn) {
+        findBtn.addEventListener('click', findMeOnce);
+    }
+    if (followBtn) {
+        followBtn.addEventListener('click', followMe);
+    }
+    if (forgetBtn) {
+        forgetBtn.addEventListener('click', forgetMe);
+    }
 
     status.textContent = "find me once";
     findMeOnce()
+
+    // Initialize button visibility
+    updateButtonVisibility();
 
     init_simple_map();
 }
