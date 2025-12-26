@@ -562,9 +562,8 @@ function redraw() {
 
     mark_current_position();
 
-    // Add scale bar and legend
+    // Add scale bar (legend is now external HTML)
     draw_scale_bar();
-    draw_legend();
 }
 
 // ----------------------------------------------------- //

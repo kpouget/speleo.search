@@ -194,6 +194,57 @@
         height: auto;
       }
 
+      /* Map Legend */
+      .map-legend {
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      .map-legend h3 {
+        margin: 0 0 12px 0;
+        color: #2c3e50;
+        font-size: 1rem;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+      }
+
+      .legend-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .legend-symbol {
+        margin-right: 10px;
+        display: inline-block;
+      }
+
+      .legend-circle {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid rgba(0,0,0,0.3);
+      }
+
+      .legend-line {
+        width: 20px;
+        height: 1px;
+      }
+
+      .legend-label {
+        color: #2c3e50;
+        font-size: 0.85rem;
+      }
+
       /* Direction Panel */
       .direction-panel {
         background: white;
@@ -435,6 +486,35 @@
         <canvas id="simple_map" width="1" height="1">
           Votre navigateur ne supporte pas le canvas HTML5.
         </canvas>
+
+        <!-- Map Legend -->
+        <div class="map-legend">
+          <h3>Légende</h3>
+          <div class="legend-item">
+            <span class="legend-symbol legend-circle" style="background: red;"></span>
+            <span class="legend-label">Cible</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol legend-circle" style="background: green;"></span>
+            <span class="legend-label">Position actuelle</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol legend-circle" style="background: blue;"></span>
+            <span class="legend-label">Départ</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol legend-line" style="border-top: 2px dashed red;"></span>
+            <span class="legend-label">Direction cible</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol legend-line" style="border-top: 2px solid green;"></span>
+            <span class="legend-label">Direction mouvement</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-symbol legend-line" style="border-top: 2px solid orange;"></span>
+            <span class="legend-label">Boussole</span>
+          </div>
+        </div>
       </section>
 
       <!-- Direction Panel -->
