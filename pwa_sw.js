@@ -1,4 +1,4 @@
-const cacheName = "ChercheLeTrou-20241226_1850";
+const cacheName = "ChercheLeTrou-20241226_1900";
 const contentToCache = [
     "libs.js",
     "trouve.js",

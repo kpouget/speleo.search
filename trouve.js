@@ -37,6 +37,7 @@ function setTarget() {
         lat: target_lat,    // Latitude
         lng: target_lon     // Longitude
     };
+
 }
 
 function init() {

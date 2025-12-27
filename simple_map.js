@@ -46,6 +46,10 @@ function latlngToGlobalXY(pt) {
 function latlngToScreenXY(pt) {
     //Calculate global X and Y for projection point
     let pos = latlngToGlobalXY(pt);
+    if (pos == null) {
+        return null;
+    }
+
     //Calculate the percentage of Global X position in relation to total global width
     pos.perX = ((pos.x-top_left.pos.x)/(bottom_right.pos.x - top_left.pos.x));
     //Calculate the percentage of Global Y position in relation to total global height
@@ -112,7 +116,12 @@ function setStartPos(pos) {
 }
 
 function gotoCurrent() {
-    let current_xy = latlngToScreenXY(get_current_position());
+    let current = get_current_position();
+    if (current == null) return;
+
+    let current_xy = latlngToScreenXY(current);
+    if (current_xy == null) return;
+
     ctx.moveTo(current_xy.x, current_xy.y);
 }
 function gotoPrevious() {
@@ -121,23 +130,23 @@ function gotoPrevious() {
 }
 
 function plotCircle(pos, color) {
+    if (pos == null || pos.lat == null || pos.lng == null) {
+        return; // Skip drawing if position is invalid
+    }
+
     ctx.beginPath();
-    gotoCurrent();
 
-    let current_xy = latlngToScreenXY(pos);
-    ctx.moveTo(current_xy.x + CIRCLE_RADIUS, current_xy.y)
+    let pos_xy = latlngToScreenXY(pos);
+    if (pos_xy == null) return;
 
-    ctx.arc(current_xy.x, current_xy.y, CIRCLE_RADIUS, 0, 2 * Math.PI);
+    ctx.arc(pos_xy.x, pos_xy.y, CIRCLE_RADIUS, 0, 2 * Math.PI);
     ctx.fillStyle = color ? color : "green"
     ctx.fill();
 
     ctx.lineWidth = 1;
     ctx.strokeStyle = color ? color : "green";
     ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = color ? color : "green";
 
-    ctx.moveTo(current_xy.x, current_xy.y);
     ctx.closePath();
 }
 
@@ -590,7 +599,6 @@ var compass_ctx = null;
 var current_heading = null;
 var target_bearing = null;
 var orientation_events_added = false;
-var lastAlphaValue = null;
 var compassEventType = ""; // Track which event type is being used
 
 let simple_map_dest_loc = {lat: null, lng: null};
@@ -601,9 +609,17 @@ function redraw() {
 
     let start_loc = get_start_position();
     if (start_loc == null) {
-        ctx.fillText("No GPS point available ...", 0, 0);
+        // Show target location even without GPS
+        if (simple_map_dest_loc.lat != null) {
+            plotCircle(simple_map_dest_loc, "red");
+        }
+        ctx.fillStyle = 'gray';
+        ctx.font = '14px Arial';
+        ctx.fillText("En attente du GPS...", 10, 30);
         return;
     }
+
+    // Show both start position and target when we have GPS data
     plotCircle(start_loc, "blue");
     plotCircle(simple_map_dest_loc, "red");
 
@@ -906,22 +922,10 @@ function handleOrientation(event) {
     compass_bearing = heading;
     redraw();
 
-    // Check for α value jumps
-    let alphaJump = "";
-    if (lastAlphaValue !== null && event.alpha !== null) {
-        let alphaDiff = Math.abs(event.alpha - lastAlphaValue);
-        if (alphaDiff > 180) alphaDiff = 360 - alphaDiff; // Handle wrap-around
-        if (alphaDiff > 30) {
-            alphaJump = ` ⚠️${alphaDiff.toFixed(0)}°`;
-        }
-    }
-    lastAlphaValue = event.alpha;
-
-    // Also update the text display with debug info
+    // Also update the text display
     const headingElement = document.querySelector('#heading');
     if (headingElement) {
-        let orientationInfo = window.orientation !== undefined ? ` | ori:${window.orientation}°` : '';
-        headingElement.innerHTML = `Direction actuelle:<br>${bearing_to_cardinal(heading)} (${Math.round(heading)}°)<br><small>Source: ${debugSource}${orientationInfo}<br>Raw: α=${event.alpha?.toFixed(1)}${alphaJump} β=${event.beta?.toFixed(1)} γ=${event.gamma?.toFixed(1)}</small>`;
+        headingElement.innerHTML = `Direction actuelle:<br>${bearing_to_cardinal(heading)} (${Math.round(heading)}°)`;
     }
 }
 
