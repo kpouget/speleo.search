@@ -20,6 +20,10 @@ var bottom_right = {
 
 // This function converts lat and lng coordinates to GLOBAL X and Y positions
 function latlngToGlobalXY(pt) {
+    if (pt == null || pt.lat == null || pt.lng == null) {
+        return null;
+    }
+
     let lat = pt.lat;
     let lng = pt.lng;
 
