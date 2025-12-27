@@ -216,35 +216,46 @@ function plot_compass_bearing_from_center() {
 }
 
 function plot_target_bearing() {
-    let current = get_current_position();
-    if (current == null || simple_map_dest_loc.lat == null) {
+    if (simple_map_dest_loc.lat == null) {
         return;
     }
 
-    let target_bearing = calcBearing(current.lat, current.lng, simple_map_dest_loc.lat, simple_map_dest_loc.lng);
+    let current = get_current_position();
+    let startPoint;
+
+    if (current == null) {
+        // Use map center coordinates when no GPS position available
+        let centerX = c.width / 2;
+        let centerY = c.height / 2;
+
+        // Convert screen center back to lat/lng (approximate)
+        let centerLat = simple_map_dest_loc.lat - 0.01;  // Offset for visibility
+        let centerLng = simple_map_dest_loc.lng;
+
+        startPoint = {
+            lat: centerLat,
+            lng: centerLng
+        };
+    } else {
+        startPoint = current;
+    }
+
+    let target_bearing = calcBearing(startPoint.lat, startPoint.lng, simple_map_dest_loc.lat, simple_map_dest_loc.lng);
 
     ctx.beginPath();
-    gotoCurrent();
 
-    // Draw a prominent red dashed line pointing to target
+    // Draw from current position or map center
+    let start_xy = latlngToScreenXY(startPoint);
+    ctx.moveTo(start_xy.x, start_xy.y);
+
+    // Draw a prominent red solid line pointing to target
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 3;
-    ctx.setLineDash([15, 5]);
+    ctx.setLineDash([]); // Solid line
 
     let loc = get_point_at_bearing(target_bearing, BEARING_DIST);
     let pt = latlngToScreenXY(loc);
     ctx.lineTo(pt.x, pt.y);
-
-    // Add an arrow head
-    let angle = target_bearing * Math.PI / 180;
-    let arrowLength = 15;
-    let arrowAngle = Math.PI / 6; // 30 degrees
-
-    ctx.lineTo(pt.x - arrowLength * Math.cos(angle - arrowAngle),
-               pt.y - arrowLength * Math.sin(angle - arrowAngle));
-    ctx.moveTo(pt.x, pt.y);
-    ctx.lineTo(pt.x - arrowLength * Math.cos(angle + arrowAngle),
-               pt.y - arrowLength * Math.sin(angle + arrowAngle));
 
     ctx.stroke();
     ctx.setLineDash([]); // Reset to solid line
