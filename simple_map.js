@@ -151,18 +151,23 @@ function plotCircle(pos, color) {
 }
 
 function drawLineToCurrent() {
-    ctx.beginPath();
-    gotoPrevious();
+    let current_pos = get_current_position();
+    let previous_pos = get_previous_position();
 
-    let current_pos = get_current_position()
-    let new_xy = latlngToScreenXY(current_pos);
+    if (current_pos == null || previous_pos == null) return;
+
+    let current_xy = latlngToScreenXY(current_pos);
+    let previous_xy = latlngToScreenXY(previous_pos);
+
+    if (current_xy == null || previous_xy == null) return;
+
+    ctx.beginPath();
+    ctx.moveTo(previous_xy.x, previous_xy.y);
+    ctx.lineTo(current_xy.x, current_xy.y);
 
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'black';
-
-    ctx.lineTo(new_xy.x, new_xy.y);
     ctx.stroke();
-
     ctx.closePath();
 }
 

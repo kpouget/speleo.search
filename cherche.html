@@ -11,11 +11,11 @@
     <link rel="apple-touch-icon" href="/speleo.png">
     <link rel="shortcut icon" href="favicon.png" type="image/png"/>
 
-    <script type="text/javascript" src="libs.js?v=1735231700"></script>
-    <script type="text/javascript" src="trouve.js?v=1735231700"></script>
-    <script type="text/javascript" src="simple_map.js?v=1735231700"></script>
+    <script type="text/javascript" src="libs.js?v=1735232000"></script>
+    <script type="text/javascript" src="trouve.js?v=1735232000"></script>
+    <script type="text/javascript" src="simple_map.js?v=1735232000"></script>
 
-    <script type="text/javascript" src="pwa.js?v=1735231700"></script>
+    <script type="text/javascript" src="pwa.js?v=1735232000"></script>
 
     <style>
       * {
@@ -518,7 +518,7 @@
       </section>
 
       <!-- Status Panel -->
-      <section class="status-panel" id="gpsPanel">
+      <section class="status-panel collapsed" id="gpsPanel">
         <h2 class="panel-header" id="gpsPanelHeader">📡 État GPS</h2>
         <div class="panel-content">
           <div class="status-item">
@@ -545,7 +545,7 @@
       </section>
 
       <!-- External Links Panel -->
-      <section class="links-panel" id="linksPanel">
+      <section class="links-panel collapsed" id="linksPanel">
         <h2 class="panel-header" id="linksPanelHeader">🌐 Cartes Externes</h2>
         <div class="panel-content">
           <div class="link-group">
@@ -575,7 +575,7 @@
         <h2>🗺️ Carte Offline</h2>
 
         <!-- Map Legend -->
-        <div class="map-legend" id="mapLegend">
+        <div class="map-legend collapsed" id="mapLegend">
           <h3 id="legendTitle">Légende</h3>
           <div class="legend-items">
             <div class="legend-item">
@@ -601,6 +601,10 @@
             <div class="legend-item">
               <span class="legend-symbol legend-line" style="border-top: 2px solid orange;"></span>
               <span class="legend-label">Boussole</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-symbol legend-line" style="border-top: 3px solid black;"></span>
+              <span class="legend-label">Trajet parcouru</span>
             </div>
           </div>
         </div>
@@ -680,11 +684,18 @@
               const panelElement = document.getElementById(panel.panelId);
 
               if (header && panelElement) {
-                  // Restore saved state from localStorage
-                  const isCollapsed = localStorage.getItem(panel.storageKey) === 'true';
-                  if (isCollapsed) {
-                      panelElement.classList.add('collapsed');
+                  // Restore saved state from localStorage, or keep default collapsed state
+                  const savedState = localStorage.getItem(panel.storageKey);
+                  if (savedState !== null) {
+                      // User has a saved preference - use it
+                      const isCollapsed = savedState === 'true';
+                      if (isCollapsed) {
+                          panelElement.classList.add('collapsed');
+                      } else {
+                          panelElement.classList.remove('collapsed');
+                      }
                   }
+                  // If no saved state, keep the default collapsed state from HTML
 
                   // Add click handler
                   header.addEventListener('click', function() {
