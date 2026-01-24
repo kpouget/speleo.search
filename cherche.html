@@ -11,11 +11,11 @@
     <link rel="apple-touch-icon" href="/speleo.png">
     <link rel="shortcut icon" href="favicon.png" type="image/png"/>
 
-    <script type="text/javascript" src="libs.js?v=1735232000"></script>
-    <script type="text/javascript" src="trouve.js?v=1735232000"></script>
-    <script type="text/javascript" src="simple_map.js?v=1735232000"></script>
+    <script type="text/javascript" src="libs.js?v=20260124e"></script>
+    <script type="text/javascript" src="trouve.js?v=20260124e"></script>
+    <script type="text/javascript" src="simple_map.js?v=20260124e"></script>
 
-    <script type="text/javascript" src="pwa.js?v=1735232000"></script>
+    <script type="text/javascript" src="pwa.js?v=20260124e"></script>
 
     <style>
       * {
@@ -100,6 +100,61 @@
         background: #2980b9;
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+      }
+
+      /* Description Panel */
+      .description-panel {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        margin: 20px 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow: hidden;
+        grid-column: 1 / -1; /* Span all columns in grid layout */
+      }
+
+      .description-panel h2 {
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+        margin: 0;
+        padding: 15px 20px;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .description-content {
+        padding: 20px;
+      }
+
+      .description-content #targetDescription {
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #2c3e50;
+        margin: 0;
+        text-align: justify;
+        word-wrap: break-word;
+      }
+
+      /* Responsive design for description panel */
+      @media (max-width: 768px) {
+        .description-panel {
+          margin: 15px 0;
+        }
+
+        .description-panel h2 {
+          font-size: 1rem;
+          padding: 12px 15px;
+        }
+
+        .description-content {
+          padding: 15px;
+        }
+
+        .description-content #targetDescription {
+          font-size: 0.9rem;
+          line-height: 1.5;
+          text-align: left;
+        }
       }
 
       /* Control Panel */
@@ -510,6 +565,14 @@
           <div id="targetLoc">Chargement des coordonnées...</div>
         </div>
       </header>
+
+      <!-- Description Section -->
+      <section class="description-panel" id="descriptionPanel" style="display: none;">
+        <h2>📄 Description du site</h2>
+        <div class="description-content">
+          <div id="targetDescription"></div>
+        </div>
+      </section>
 
       <!-- Control Panel -->
       <section class="control-panel">

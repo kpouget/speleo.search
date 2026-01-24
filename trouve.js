@@ -5,6 +5,8 @@ var gps_success_function = undefined
 
 function setTarget() {
     const urlParams = new URLSearchParams(window.location.search);
+
+    // Parse coordinates
     const myLon = parseFloat(urlParams.get('lon'));
     if (!isNaN(myLon)) {
         target_lon = myLon;
@@ -13,10 +15,26 @@ function setTarget() {
     if (!isNaN(myLat)) {
         target_lat = myLat;
     }
-    const myName = urlParams.get('name');
 
-    if (myName != null) {
+    // Parse name and description (with proper decoding for special characters)
+    const myName = urlParams.get('name');
+    const myDescription = urlParams.get('description');
+
+    if (myName != null && myName.trim()) {
         name = myName;
+
+        // Debug logging for names with special characters
+        if (myName.includes(',') || myName.includes(':') || myName.includes('(')) {
+            console.log('🔍 Received cave name with special chars:', myName);
+        }
+    }
+
+    // Debug logging for descriptions
+    if (myDescription) {
+        console.log('📄 Received description, length:', myDescription.length, 'chars');
+        if (myDescription.includes(',')) {
+            console.log('🔍 Description contains commas - parsing should handle this correctly');
+        }
     }
     const targetName = document.querySelector('#targetName');
     const targetLoc = document.querySelector('#targetLoc');
@@ -27,6 +45,34 @@ function setTarget() {
     targetLoc.textContent = coordText;
     if (targetLocCopy) {
         targetLocCopy.textContent = coordText;
+    }
+
+    // Display description if available (from Taisne data)
+    const targetDescription = document.querySelector('#targetDescription');
+    const descriptionPanel = document.querySelector('#descriptionPanel');
+
+    if (targetDescription && descriptionPanel && myDescription && myDescription.trim()) {
+        // Clean up HTML tags and format the description
+        let cleanDescription = myDescription.trim()
+            .replace(/<b>Page Taisne<\/b>\s*:\s*\d+\s*/gi, '') // Remove "Page Taisne: X"
+            .replace(/<b>Plan<\/b>\s*:\s*\d+\s*/gi, '') // Remove "Plan: X"
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim();
+
+        // Safely escape HTML to prevent injection, but preserve basic structure
+        const safeDescription = cleanDescription
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+
+        targetDescription.innerHTML = safeDescription;
+        descriptionPanel.style.display = 'block';
+        console.log('✅ Displaying cave description in dedicated section (', cleanDescription.length, 'chars):', cleanDescription.substring(0, 100) + '...');
+    } else if (descriptionPanel) {
+        descriptionPanel.style.display = 'none';
+        console.log('ℹ️ No description available - hiding description panel');
     }
 
     setLinks("target", target_lon, target_lat)
@@ -272,12 +318,39 @@ function releaseWakeLock() {
 
 function indexSearch() {
     let text = this.value;
+    let visibleCount = 0;
+    let totalCount = 0;
 
     document.querySelectorAll('#cave_list li').forEach(function(entry) {
+        // Skip the loading/empty state entries
+        if (entry.classList.contains('loading')) {
+            return;
+        }
+
+        totalCount++;
         let has_it = entry.innerText.toLowerCase().includes(text.toLowerCase());
 
-        entry.style.display = has_it ? "block" : "none";
+        entry.style.display = has_it ? "" : "none";
+        if (has_it) {
+            visibleCount++;
+        }
     });
+
+    // Update the count display
+    const caveCount = document.getElementById('cave-count');
+    if (caveCount && totalCount > 0) {
+        if (text.trim() === '') {
+            // No filter - restore original count display
+            caveCount.textContent = caveCount.dataset.originalText || caveCount.textContent;
+        } else {
+            // Store original text if not already stored
+            if (!caveCount.dataset.originalText) {
+                caveCount.dataset.originalText = caveCount.textContent;
+            }
+            // Show filtered count
+            caveCount.textContent = `${visibleCount} / ${totalCount} grottes (filtré)`;
+        }
+    }
 }
 
 function init_index() {
