@@ -321,6 +321,11 @@ function init_cherche() {
         forgetBtn.addEventListener('click', forgetMe);
     }
 
+    const resetBtn = document.querySelector('#reset-path');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetPath);
+    }
+
     status.textContent = "find me once";
     findMeOnce()
 

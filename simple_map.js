@@ -539,6 +539,34 @@ function add_to_path(new_loc) {
     path.push(new_loc);
 }
 
+function resetPath() {
+    // Get current GPS position and reset the path to start from there
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const newStartPos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                setStartPos(newStartPos);
+                redraw();
+                console.log("Path reset to current GPS position:", newStartPos);
+            },
+            function(error) {
+                alert("Impossible d'obtenir la position GPS pour réinitialiser le trajet");
+                console.error("GPS error for path reset:", error);
+            },
+            {
+                timeout: 10000,
+                enableHighAccuracy: true,
+                maximumAge: 60000
+            }
+        );
+    } else {
+        alert("GPS non disponible sur cet appareil");
+    }
+}
+
 // ----------------------------------------------------- //
 //                 testing functions
 // ----------------------------------------------------- //
