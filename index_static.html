@@ -106,6 +106,24 @@
         transform: translateY(-2px);
       }
 
+      #custom-location {
+        background: #e67e22;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+        width: 100%;
+      }
+
+      #custom-location:hover {
+        background: #d35400;
+        transform: translateY(-2px);
+      }
+
       .search-section {
         margin-bottom: 20px;
       }
@@ -380,6 +398,132 @@
       .hidden-gps {
         display: none;
       }
+
+      /* Modal styles */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        animation: modalShow 0.3s ease;
+      }
+
+      @keyframes modalShow {
+        from {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .modal-header {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #2c3e50;
+      }
+
+      .modal-header h2 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #2c3e50;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+        box-sizing: border-box;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+      }
+
+      .form-group .help-text {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        margin-top: 5px;
+      }
+
+      .modal-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        margin-top: 30px;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 25px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+
+      .btn-primary {
+        background: #3498db;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #2980b9;
+        transform: translateY(-2px);
+      }
+
+      .btn-secondary {
+        background: #95a5a6;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #7f8c8d;
+        transform: translateY(-2px);
+      }
+
+      .error-message {
+        background: #e74c3c;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -412,6 +556,7 @@
 
         <div class="search-section">
           <input type="text" id="search" placeholder="🔍 Rechercher une grotte... (nom, type, localité)"/>
+          <button id="custom-location">📍 Ajouter un lieu personnalisé</button>
         </div>
       </div>
 
@@ -434,10 +579,207 @@
 
     <p id="version" style="text-align: center; padding: 20px; color: #7f8c8d;"></p>
 
+    <!-- Custom Location Modal -->
+    <div id="custom-location-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>📍 Ajouter un lieu personnalisé</h2>
+          <p>Entrez un nom et des coordonnées GPS pour créer un point de navigation personnalisé</p>
+        </div>
+
+        <div class="form-group">
+          <label for="location-name">Nom du lieu</label>
+          <input type="text" id="location-name" placeholder="Ex: Mon campement, Point de rendez-vous..." maxlength="100">
+          <div class="help-text">Donnez un nom descriptif à votre lieu</div>
+        </div>
+
+        <div class="form-group">
+          <label for="location-coordinates">Coordonnées GPS</label>
+          <input type="text" id="location-coordinates" placeholder="Ex: 44.5121,1.3795 ou 44.5121 1.3795" autocomplete="off">
+          <div class="help-text">Formats acceptés: 44.5121,1.3795 ou 44.5121 1.3795 (détection automatique lat/lon pour la France)</div>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+
+        <div class="modal-buttons">
+          <button type="button" id="modal-cancel" class="btn btn-secondary">Annuler</button>
+          <button type="button" id="modal-submit" class="btn btn-primary">Aller à ce lieu</button>
+        </div>
+      </div>
+    </div>
+
     <script type="text/javascript">
       (function() {
-          init_index()
+          init_index();
+          initCustomLocationModal();
       })();
+
+      function initCustomLocationModal() {
+          const customLocationBtn = document.getElementById('custom-location');
+          const modal = document.getElementById('custom-location-modal');
+          const modalCancel = document.getElementById('modal-cancel');
+          const modalSubmit = document.getElementById('modal-submit');
+          const locationName = document.getElementById('location-name');
+          const locationCoordinates = document.getElementById('location-coordinates');
+          const errorMessage = document.getElementById('error-message');
+
+          // Show modal when button is clicked
+          customLocationBtn.addEventListener('click', function() {
+              modal.style.display = 'flex';
+              locationName.focus();
+          });
+
+          // Hide modal when clicking cancel or outside the modal
+          modalCancel.addEventListener('click', hideModal);
+          modal.addEventListener('click', function(e) {
+              if (e.target === modal) {
+                  hideModal();
+              }
+          });
+
+          // Hide modal on Escape key
+          document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape' && modal.style.display === 'flex') {
+                  hideModal();
+              }
+          });
+
+          function hideModal() {
+              modal.style.display = 'none';
+              clearForm();
+          }
+
+          function clearForm() {
+              locationName.value = '';
+              locationCoordinates.value = '';
+              errorMessage.style.display = 'none';
+              errorMessage.textContent = '';
+          }
+
+          function showError(message) {
+              errorMessage.textContent = message;
+              errorMessage.style.display = 'block';
+          }
+
+          function validateCoordinates(coordString) {
+              // Remove extra spaces and normalize
+              coordString = coordString.trim().replace(/\s+/g, ' ');
+
+              let parts = [];
+
+              // Try different separators: comma with optional space, or just space
+              if (coordString.includes(',')) {
+                  parts = coordString.split(',').map(s => s.trim());
+              } else if (coordString.includes(' ')) {
+                  parts = coordString.split(' ').filter(s => s.length > 0);
+              } else {
+                  return null;
+              }
+
+              // Should have exactly 2 parts
+              if (parts.length !== 2) {
+                  return null;
+              }
+
+              let num1 = parseFloat(parts[0]);
+              let num2 = parseFloat(parts[1]);
+
+              // Check if parsing was successful
+              if (isNaN(num1) || isNaN(num2)) {
+                  return null;
+              }
+
+              // Validate basic ranges
+              if (num1 < -180 || num1 > 180 || num2 < -180 || num2 > 180) {
+                  return { error: 'Les coordonnées doivent être entre -180 et 180 degrés' };
+              }
+
+              // Auto-detect lat/lon order for mainland France
+              // France mainland: lat ~41-51°N, lon ~-5-10°E
+              let lat, lon;
+
+              // Check if coordinates look like they're swapped
+              // If first number is in longitude range for France and second is in latitude range
+              if ((num1 >= -5 && num1 <= 10) && (num2 >= 41 && num2 <= 51)) {
+                  // Looks like lon,lat format - swap them
+                  lat = num2;
+                  lon = num1;
+              } else if ((num1 >= 41 && num1 <= 51) && (num2 >= -5 && num2 <= 10)) {
+                  // Normal lat,lon format
+                  lat = num1;
+                  lon = num2;
+              } else {
+                  // Outside France mainland range, use as provided but validate
+                  lat = num1;
+                  lon = num2;
+
+                  // Validate standard ranges
+                  if (lat < -90 || lat > 90) {
+                      return { error: 'La latitude doit être entre -90 et 90 degrés' };
+                  }
+                  if (lon < -180 || lon > 180) {
+                      return { error: 'La longitude doit être entre -180 et 180 degrés' };
+                  }
+              }
+
+              return { lat: lat, lon: lon };
+          }
+
+          // Handle form submission
+          modalSubmit.addEventListener('click', function() {
+              const name = locationName.value.trim();
+              const coordinates = locationCoordinates.value.trim();
+
+              // Validate name
+              if (!name) {
+                  showError('Veuillez entrer un nom pour le lieu');
+                  locationName.focus();
+                  return;
+              }
+
+              if (name.length < 2) {
+                  showError('Le nom doit contenir au moins 2 caractères');
+                  locationName.focus();
+                  return;
+              }
+
+              // Validate coordinates
+              if (!coordinates) {
+                  showError('Veuillez entrer les coordonnées GPS');
+                  locationCoordinates.focus();
+                  return;
+              }
+
+              const validationResult = validateCoordinates(coordinates);
+
+              if (!validationResult) {
+                  showError('Format de coordonnées invalide. Utilisez: 44.5121,1.3795 ou 44.5121 1.3795');
+                  locationCoordinates.focus();
+                  return;
+              }
+
+              if (validationResult.error) {
+                  showError(validationResult.error);
+                  locationCoordinates.focus();
+                  return;
+              }
+
+              // All validation passed, navigate to cherche.html
+              const encodedName = encodeURIComponent(name);
+              const url = `cherche.html?lat=${validationResult.lat}&lon=${validationResult.lon}&name=${encodedName}`;
+
+              window.location.href = url;
+          });
+
+          // Allow Enter key to submit form
+          [locationName, locationCoordinates].forEach(input => {
+              input.addEventListener('keydown', function(e) {
+                  if (e.key === 'Enter') {
+                      modalSubmit.click();
+                  }
+              });
+          });
+      }
     </script>
   </body>
 </html>
