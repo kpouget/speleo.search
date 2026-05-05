@@ -809,10 +809,13 @@
           const directionHeader = document.getElementById('direction-distance-header');
           if (directionHeader) {
               directionHeader.addEventListener('click', function() {
-                  window.scrollTo({
-                      top: 0,
-                      behavior: 'smooth'
-                  });
+                  const directionPanel = directionHeader.closest('.direction-panel');
+                  if (directionPanel) {
+                      directionPanel.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start'
+                      });
+                  }
               });
           }
       }
