@@ -155,6 +155,11 @@
           line-height: 1.5;
           text-align: left;
         }
+
+        /* Show IGN Cartes link on mobile */
+        .map-link.ign {
+          display: inline-block;
+        }
       }
 
       /* Control Panel */
@@ -500,6 +505,8 @@
         background: #2980b9;
       }
 
+      .map-link.ign { background: #ff6b35; display: none; }
+      .map-link.ign:hover { background: #e85a30; }
       .map-link.geo { background: #27ae60; }
       .map-link.geo:hover { background: #229954; }
       .map-link.google { background: #e74c3c; }
@@ -620,6 +627,7 @@
             <h3>🎯 Cible</h3>
             <div class="coordinates" id="targetLoc-copy">Coordonnées de la cible</div>
             <div class="map-links">
+              <a id="ign-target" target="_blank" class="map-link ign">IGN Cartes</a>
               <a id="geo-target" target="_blank" class="map-link geo">Geoportail</a>
               <a id="osm-target" target="_blank" class="map-link">OpenStreetMap</a>
               <a id="google-target" target="_blank" class="map-link google">Google Maps</a>
@@ -630,6 +638,7 @@
             <h3>📍 Position actuelle</h3>
             <div class="coordinates" id="lonlat-copy">Position en attente GPS...</div>
             <div class="map-links">
+              <a id="ign-current" target="_blank" class="map-link ign">IGN Cartes</a>
               <a id="geo-current" target="_blank" class="map-link geo">Geoportail</a>
               <a id="osm-current" target="_blank" class="map-link">OpenStreetMap</a>
               <a id="google-current" target="_blank" class="map-link google">Google Maps</a>

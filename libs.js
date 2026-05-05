@@ -79,9 +79,15 @@ function distWithUnit(dist) {
     }
 }
 function setLinks(name, longitude, latitude) {
+    const ign = document.querySelector('#ign-'+name);
     const osm = document.querySelector('#osm-'+name);
     const geo = document.querySelector('#geo-'+name);
     const google = document.querySelector('#google-'+name);
+
+    if (ign) {
+        ign.href = `https://cartes-ign.ign.fr?lng=${longitude}&lat=${latitude}&z=16.5`;
+        ign.textContent = `IGN Cartes`;
+    }
 
     if (geo) {
         geo.href = `https://www.geoportail.gouv.fr/carte?c=${longitude},${latitude}&z=30&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes`;

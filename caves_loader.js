@@ -87,6 +87,9 @@ function createCaveElement(cave, dataSource = null) {
            data-name='${cave.name}'>${cave.name}</a>
         ${caveDetails}
         <div class="external-links">
+            <a href='https://cartes-ign.ign.fr?lng=${cave.longitude}&lat=${cave.latitude}&z=16.5'
+               target='_blank'
+               class="ign-link">IGN Cartes</a>
             <a href='https://www.geoportail.gouv.fr/carte?c=${cave.longitude},${cave.latitude}&z=30&l0=GEOGRAPHICALGRIDSYSTEMS.MAPS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes'
                target='_blank'
                class="geo-link">Géoportail</a>
