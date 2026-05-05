@@ -173,7 +173,7 @@ function update_cave_distances(position) {
     var list = document.querySelector('#cave_list');
 
     [...list.children]
-        .sort((a, b) => parseInt(a.dataset.distance) > parseInt(b.dataset.distance) ? 1 : -1)
+        .sort((a, b) => parseInt(a.dataset.distance) - parseInt(b.dataset.distance))
         .forEach(node => list.appendChild(node));
 }
 
