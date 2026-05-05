@@ -102,7 +102,7 @@ function init() {
     const lonlat = document.querySelector('#lonlat');
 
     loc_age.dataset.start_ts = 0;
-    setInterval(refreshGPSAge, 10*1000); // 10s
+    setInterval(refreshGPSAge, 5*1000); // 5s
 }
 
 function refreshGPSAge() {
@@ -112,6 +112,38 @@ function refreshGPSAge() {
         return
     }
     loc_age.textContent = `${ts_to_hms_dist(start_ts)}`
+
+    // Update combined age/accuracy display
+    updateGPSAgeAccuracy();
+}
+
+function updateGPSAgeAccuracy(accuracy = null) {
+    const gpsAgeAccuracy = document.querySelector('#gps-age-accuracy');
+    if (!gpsAgeAccuracy) return;
+
+    const start_ts = parseInt(loc_age.dataset.start_ts);
+
+    if (start_ts == 0) {
+        gpsAgeAccuracy.textContent = 'GPS: en attente...';
+        return;
+    }
+
+    const age = ts_to_hms_dist(start_ts);
+
+    if (accuracy !== null) {
+        // Store accuracy for future updates
+        gpsAgeAccuracy.dataset.accuracy = accuracy;
+    } else {
+        // Use stored accuracy if available
+        accuracy = gpsAgeAccuracy.dataset.accuracy;
+    }
+
+    if (accuracy) {
+        const accuracyText = distWithUnit(Math.trunc(accuracy));
+        gpsAgeAccuracy.textContent = `GPS: ${age}, ±${accuracyText}`;
+    } else {
+        gpsAgeAccuracy.textContent = `GPS: ${age}`;
+    }
 }
 
 function update_position(position) {
@@ -125,8 +157,12 @@ function update_position(position) {
 
     try {
         gps_accuracy.textContent = `+/- ${distWithUnit(Math.trunc(position.coords.accuracy))}`
+
+        // Update combined GPS age and accuracy display
+        updateGPSAgeAccuracy(position.coords.accuracy);
     } catch (error) {
         gps_accuracy.textContent = `erreur: ${error}`
+        updateGPSAgeAccuracy(null);
     }
 
     if (position.coords.heading != null) {

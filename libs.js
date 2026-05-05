@@ -28,22 +28,33 @@ function ts_to_heure(ts) {
     return affichZero(infos.getHours()) + ':' + affichZero(infos.getMinutes()) + ':' + affichZero(infos.getSeconds())
 }
 function ts_to_hms_dist(ts) {
-    now = new Date()
-    ts_dt = new Date(ts);
+    const now = new Date();
+    const ts_dt = new Date(ts);
 
-    str = ""
-    const hr_diff =  now.getHours() - ts_dt.getHours()
-    if (hr_diff != 0) {
-        str += `${hr_diff}h `
-    }
-    const min_diff = now.getMinutes() - ts_dt.getMinutes()
-    if (min_diff != 0) {
-        str += `${min_diff}min `
-    }
-    const sec_diff = now.getSeconds() - ts_dt.getSeconds()
+    // Calculate total elapsed milliseconds
+    const elapsed_ms = now.getTime() - ts_dt.getTime();
 
-    str += `${sec_diff} seconds`
-    return str
+    // Convert to seconds and round up to next 5-second interval
+    let total_seconds = Math.floor(elapsed_ms / 1000);
+    total_seconds = Math.ceil(total_seconds / 5) * 5;
+
+    // Convert back to hours, minutes, seconds
+    const hours = Math.floor(total_seconds / 3600);
+    const minutes = Math.floor((total_seconds % 3600) / 60);
+    const seconds = total_seconds % 60;
+
+    let str = "";
+
+    if (hours > 0) {
+        str += `${hours}h `;
+    }
+    if (minutes > 0) {
+        str += `${minutes}min `;
+    }
+
+    str += `${seconds}s`;
+
+    return str;
 }
 
 // Converts from radians to degrees.
